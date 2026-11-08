@@ -17,7 +17,11 @@ the change. Run the required checks and report the actual commands and outcomes.
 Inspect the final diff for accidental scope changes and secrets before committing.
 
 When Hybrid SAGE is connected, use frontier reasoning for planning, decomposition,
-review, and difficult decisions. For substantial work, check fleet_status and the
+review, and difficult decisions. Respect the user's persistent hybrid mode and
+assistant model selection. Use configure_fleet to list/select a model or turn
+hybrid mode on/off when asked; disabled mode means execute directly without new
+worker jobs or cross-harness consultations. Do not re-enable it without the user
+requesting that change. For substantial work, check fleet_status and the
 worker model catalog, then delegate bounded implementation and test loops to
 available OpenCode workers with verified zero-cost models or a configured trusted
 worker selection. Local and free are different: enforce data locality separately.

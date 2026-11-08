@@ -43,16 +43,20 @@ class InstallationTests(unittest.TestCase):
         auth = self.args.codex_home / "auth.json"
         auth.write_text('"test auth sentinel"')
         backup = harness.install(self.args)
-        self.assertEqual(self.config.read_bytes(), self.original)
+        config = tomllib.loads(self.config.read_text())
+        for key, value in tomllib.loads(self.original.decode()).items():
+            self.assertEqual(config[key], value)
+        self.assertIn('# Keep this comment', self.config.read_text())
         self.assertEqual(auth.read_text(), '"test auth sentinel"')
         self.assertTrue((self.args.skills_dir / "sage-genomics" / "SKILL.md").is_file())
-        profile = tomllib.loads((self.args.codex_home / "sage.config.toml").read_text())
-        self.assertNotIn("mcp_servers", profile)
-        self.assertNotIn("model", profile)
-        self.assertNotIn("approval_policy", profile)
+        self.assertNotIn("mcp_servers", config)
+        self.assertNotIn("approval_policy", config)
+        self.assertEqual(config['web_search'], 'live')
+        self.assertEqual(config['agents']['max_concurrent_threads_per_session'], 3)
         harness.restore(backup)
         self.assertEqual(agents.read_text(), "Personal instructions.\n")
         self.assertFalse((self.args.codex_home / "sage.config.toml").exists())
+        self.assertEqual(self.config.read_bytes(), self.original)
         self.assertFalse((self.args.skills_dir / "sage-genomics").is_symlink())
         self.assertEqual((unrelated / "SKILL.md").read_text(), "private skill")
 
@@ -75,7 +79,7 @@ class InstallationTests(unittest.TestCase):
         self.args.with_hybrid = hybrid
         self.args.mcp = ["deepwiki", "context7", "context7", "openai-docs"]
         harness.install(self.args)
-        config = tomllib.loads((self.args.codex_home / "sage.config.toml").read_text())
+        config = tomllib.loads(self.config.read_text())
         self.assertEqual(len(config["mcp_servers"]), 4)
         self.assertEqual(config["mcp_servers"]["hybrid-sage"]["args"], [str(server)])
 
@@ -85,7 +89,7 @@ class InstallationTests(unittest.TestCase):
         agents.write_text(agents.read_text() + "New personal instruction.\n")
         with self.assertRaisesRegex(ValueError, "Changed since installation"):
             harness.restore(backup)
-        self.assertTrue((self.args.codex_home / "sage.config.toml").exists())
+        self.assertEqual(tomllib.loads(self.config.read_text())['web_search'], 'live')
         self.assertIn("New personal instruction", agents.read_text())
 
     def test_invalid_existing_toml_fails_before_installation(self):
@@ -102,7 +106,7 @@ class InstallationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "directory"):
             harness.install(self.args)
         self.assertEqual((collision / "SKILL.md").read_text(), "User authored")
-        self.assertFalse((self.args.codex_home / "sage.config.toml").exists())
+        self.assertEqual(self.config.read_bytes(), self.original)
 
     def test_failed_write_rolls_back_previous_writes(self):
         original_apply = harness.apply_state
@@ -118,7 +122,7 @@ class InstallationTests(unittest.TestCase):
         with patch.object(harness, "apply_state", side_effect=fail_once):
             with self.assertRaisesRegex(OSError, "full disk"):
                 harness.install(self.args)
-        self.assertFalse((self.args.codex_home / "sage.config.toml").exists())
+        self.assertEqual(self.config.read_bytes(), self.original)
         self.assertEqual(self.config.read_bytes(), self.original)
 
     def test_dry_run_creates_no_runtime_files(self):
@@ -181,10 +185,84 @@ class InstallationTests(unittest.TestCase):
                                 capture_output=True, text=True, check=True,
                                 env={**os.environ, "CODEX_HOME": "/wrong/home",
                                      "PATH": str(fake_bin) + os.pathsep + os.environ["PATH"]})
-        self.assertEqual(result.stdout.splitlines(), [str(self.args.codex_home), "--profile", "sage", "test argument"])
+        self.assertEqual(result.stdout.splitlines(), [str(self.args.codex_home), "test argument"])
         result = subprocess.run([str(self.args.bin_dir / "codex-sage-doctor")], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Installation intact", result.stdout)
+
+    def test_passive_merge_preserves_complex_user_configuration(self):
+        original = '''# User-owned comment
+model = "chosen-model"
+model_reasoning_effort = "xhigh"
+approval_policy = "never"
+[agents]
+default_subagent_model = "my-worker"
+[tui]
+status_line = ["model", "context-remaining"]
+[plugins."my.plugin"]
+enabled = true
+[mcp_servers.private_docs]
+url = "https://example.com/mcp"
+bearer_token_env_var = "MY_DOCS_TOKEN"
+[[skills.config]]
+name = "disabled-skill"
+enabled = false
+'''
+        self.config.write_text(original)
+        harness.install(self.args)
+        merged = tomllib.loads(self.config.read_text())
+        expected = harness.merge_settings(tomllib.loads(original), {
+            'web_search': 'live', 'agents': {'enabled': True, 'max_concurrent_threads_per_session': 3}})
+        self.assertEqual(merged, expected)
+        self.assertIn('# User-owned comment', self.config.read_text())
+        self.assertFalse((self.args.codex_home / 'sage.config.toml').exists())
+
+    def test_doctor_allows_unrelated_user_setting_changes(self):
+        harness.install(self.args)
+        self.config.write_text(self.config.read_text().replace('user-selected', 'new-user-model'))
+        self.args.native = False
+        harness.doctor(self.args)
+
+    def test_migration_retires_only_unchanged_owned_profile(self):
+        harness.install(self.args)
+        legacy = self.args.codex_home / 'sage.config.toml'
+        legacy.write_text('web_search = "cached"\n')
+        latest = self.args.codex_home / 'sage/latest.json'
+        recorded = json.loads(latest.read_text())
+        recorded[str(legacy)] = harness.fingerprint(harness.snapshot(legacy))
+        latest.write_text(json.dumps(recorded))
+        backup = harness.install(self.args)
+        self.assertFalse(legacy.exists())
+        harness.restore(backup)
+        self.assertEqual(legacy.read_text(), 'web_search = "cached"\n')
+
+    def test_native_writer_failure_does_not_change_live_files(self):
+        with patch.object(harness, 'stage_config', side_effect=ValueError('native write failed')):
+            with self.assertRaisesRegex(ValueError, 'native write failed'):
+                harness.install(self.args)
+        self.assertEqual(self.config.read_bytes(), self.original)
+        self.assertFalse(self.args.skills_dir.exists())
+
+    def test_concurrent_user_config_edit_is_not_overwritten(self):
+        def concurrent_edit(current, settings):
+            self.config.write_text('model = "edited-during-install"\n')
+            return current  # Simulate a user edit while the native writer was staging.
+
+        with patch.object(harness, 'stage_config', side_effect=concurrent_edit):
+            with self.assertRaisesRegex(ValueError, 'changed while staging'):
+                harness.install(self.args)
+        self.assertEqual(self.config.read_text(), 'model = "edited-during-install"\n')
+        self.assertFalse(self.args.skills_dir.exists())
+
+    def test_reinstallation_keeps_previously_selected_servers_managed(self):
+        self.args.mcp = ['context7']
+        harness.install(self.args)
+        self.args.mcp = []
+        harness.install(self.args)
+        desired = json.loads((self.args.codex_home / 'sage/managed-config.json').read_text())
+        self.assertEqual(desired['mcp_servers']['context7']['url'], 'https://mcp.context7.com/mcp')
+        self.args.native = False
+        harness.doctor(self.args)
 
 
 if __name__ == "__main__":

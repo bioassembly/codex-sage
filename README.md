@@ -1,8 +1,10 @@
 # Codex SAGE
 
-A Codex harness for frontier planning and review, free OpenCode worker orchestration,
-and scientific engineering: focused skills, specialist agents, optional MCP tools,
-and reversible installation.
+**Codex SAGE (State-of-the-Art Agentic Genomics & Engineering Harness)** — a
+reproducible, high-performance configuration harness for OpenAI Codex, engineered
+to match and exceed the capabilities of modern agentic coding and bioinformatics
+harnesses: frontier planning and review, free OpenCode worker orchestration,
+focused skills, specialist agents, optional MCP tools, and reversible installation.
 
 SAGE adapts the useful workflows from
 [antigravity-sage](https://github.com/bioassembly/antigravity-sage) and
@@ -12,14 +14,14 @@ access; it does not change model weights or claim benchmark gains without evalua
 
 ## Install
 
-Requires Python 3.11+, Bash, and Codex CLI 0.167 or newer with file-based profiles
-and standalone custom agent definitions. The native smoke test was run on 0.167.0.
+Requires Python 3.11+, Bash, and Codex CLI 0.167 or newer with standalone custom
+agent definitions. The native smoke test was run on 0.167.0.
 
 ```bash
 git clone https://github.com/bioassembly/codex-sage.git
 cd codex-sage
 bash scripts/activate.sh
-codex-sage
+codex
 ```
 
 For the full cross-harness workflow, clone
@@ -27,21 +29,25 @@ For the full cross-harness workflow, clone
 
 ```bash
 bash scripts/activate.sh --with-hybrid ../hybrid-sage --mcp context7 --mcp deepwiki
-codex-sage
+codex
 ```
 
 The installer links 15 skills into `~/.agents/skills`, installs three agent files
 under `$CODEX_HOME/agents`, merges a marked section into `$CODEX_HOME/AGENTS.md`,
-and writes `$CODEX_HOME/sage.config.toml`. `$CODEX_HOME` defaults to `~/.codex`.
-It also installs `codex-sage` and `codex-sage-doctor` into `~/.local/bin`; ensure
-that directory is on `PATH`. Keep this checkout in place because skills link to it.
+and merges selected SAGE defaults and any requested MCP servers into the ordinary
+`$CODEX_HOME/config.toml`, preserving your unrelated model, reasoning, UI,
+provider, plugin, and permission settings. `$CODEX_HOME` defaults to `~/.codex`.
+It also installs `codex-sage-doctor` into `~/.local/bin`, and keeps `codex-sage`
+as a compatibility alias that simply runs plain `codex`; ensure that directory is
+on `PATH`. Keep this checkout in place because skills link to it.
 
-Launch with `codex --profile sage` or `codex-sage` to load the profile's live web
-search, agent concurrency, and selected MCP servers. Skills, global instructions,
-and personal agent definitions are discoverable after restarting Codex even
-without the profile. The profile inherits your model, reasoning effort, plugins,
-and permissions. The installer does not replace `config.toml` or touch `auth.json`.
-Existing user-configured MCP servers also remain inherited.
+Launch plain `codex` — no extra profile or wrapper launch is required. The merged
+config adds live web search, agent concurrency, and the selected MCP servers
+alongside your existing settings, including user-configured MCP servers. The
+installer uses Codex's native TOML writer to preserve unrelated settings and
+comments, does not touch `auth.json`, and snapshots originals under `$CODEX_HOME/sage/backups` for
+restore. A `sage.config.toml` profile installed by older versions is retired
+only if unchanged.
 
 ## Frontier planner, worker execution, frontier review
 
@@ -66,6 +72,25 @@ guarantee unlimited capacity. Free hosted models are not private local models.
 Unavailable workers fall back to direct execution without a silent paid-model swap.
 See Hybrid SAGE's fleet policy for model allowlists and privacy handling.
 
+### Choose an assistant or disable hybrid mode
+
+Install Hybrid SAGE's CLI once with `bash ../hybrid-sage/install.sh`, then:
+
+```bash
+sage models --provider opencode
+sage model opencode/glm-5.3-flash-free
+sage hybrid off
+sage hybrid on
+sage hybrid status
+```
+
+The choice persists across Codex, Antigravity, and OpenCode. Disabling hybrid mode
+stops new worker jobs and cross-harness consultations; the frontier model continues
+directly, and running jobs remain available to poll. Re-enabling retains your
+selected assistant. Paid or unknown-price model selection requires an explicit
+`--allow-paid`; there is no silent paid fallback. You can also ask the assistant
+to list models, select one, or turn hybrid mode off/on through `configure_fleet`.
+
 ## Included skills
 
 | Area | Skills |
@@ -86,8 +111,9 @@ enforced consultation isolation, use Hybrid's restricted Codex consultation path
 
 ## MCP choices
 
-No new MCP server starts in the minimal installation. Add only the capabilities
-you use; repeated `--mcp` flags select the installed profile's complete optional set.
+No new MCP server starts in the minimal installation. Add the capabilities you
+use with repeated `--mcp` flags. Existing servers remain configured; omitting a
+flag on a later install does not remove a server you already enabled.
 
 | Integration | Enable | Purpose |
 | --- | --- | --- |

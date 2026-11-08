@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import base64
+import copy
 import hashlib
 import json
 import os
@@ -77,6 +79,82 @@ def merge_instructions(current: str, instructions: str) -> str:
     return current + ("\n\n" if current and not current.endswith("\n\n") else "") + block + "\n"
 
 
+def merge_settings(current: dict, additions: dict) -> dict:
+    if not isinstance(current, dict):
+        raise ValueError("An existing scalar conflicts with a SAGE configuration table")
+    merged = copy.deepcopy(current)
+    for key, value in additions.items():
+        if isinstance(value, dict):
+            merged[key] = merge_settings(merged.get(key, {}), value)
+        else:
+            merged[key] = copy.deepcopy(value)
+    return merged
+
+
+def stage_config(current: str, settings: dict) -> str:
+    """Use Codex's native TOML writer in isolation, before changing live files."""
+    binary = shutil.which("codex")
+    if not binary:
+        raise ValueError("Codex CLI 0.167+ is required to merge configuration safely")
+    edits = []
+
+    def flatten(values: dict, prefix: str = "") -> None:
+        for key, value in values.items():
+            path = f"{prefix}.{key}" if prefix else key
+            if isinstance(value, dict):
+                flatten(value, path)
+            else:
+                edits.append({"keyPath": path, "value": value, "mergeStrategy": "replace"})
+
+    flatten(settings)
+    expected = merge_settings(tomllib.loads(current), settings)
+
+    async def write(staged: Path) -> None:
+        proc = await asyncio.create_subprocess_exec(
+            binary, "app-server", "--stdio", cwd=staged.parent,
+            env={**os.environ, "CODEX_HOME": str(staged.parent)},
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL)
+
+        async def request(identifier: int, method: str, params: dict) -> None:
+            proc.stdin.write((json.dumps({"id": identifier, "method": method, "params": params}) + "\n").encode())
+            await proc.stdin.drain()
+            while True:
+                line = await proc.stdout.readline()
+                if not line:
+                    raise ValueError("Codex config writer exited before returning a result")
+                result = json.loads(line)
+                if result.get("id") == identifier:
+                    if "error" in result:
+                        raise ValueError("Codex rejected the staged configuration update")
+                    return
+
+        try:
+            await asyncio.wait_for(request(1, "initialize", {
+                "clientInfo": {"name": "codex-sage-installer", "version": "1"}}), timeout=30)
+            await asyncio.wait_for(request(2, "config/batchWrite", {
+                "filePath": str(staged), "edits": edits, "reloadUserConfig": False}), timeout=30)
+        finally:
+            proc.stdin.close()
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=3)
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.wait()
+
+    with tempfile.TemporaryDirectory(prefix="codex-sage-config-") as temp:
+        staged = Path(temp) / "config.toml"
+        staged.write_text(current)
+        try:
+            asyncio.run(write(staged))
+        except TimeoutError as error:
+            raise ValueError("Codex's native config writer timed out; live configuration was not changed") from error
+        output = staged.read_text()
+    if tomllib.loads(output) != expected:
+        raise ValueError("Native config merge changed an unrelated setting; installation stopped")
+    return output
+
+
 def check() -> None:
     for path in sorted(REPO.rglob("*.toml")):
         read_toml(path)
@@ -105,22 +183,28 @@ def install(args: argparse.Namespace) -> Path | None:
     check()
     codex_home = args.codex_home.resolve()
     config = codex_home / "config.toml"
+    config_before = snapshot(config)
     if config.exists():
         read_toml(config)  # Fail before mutation if existing config is malformed.
-    profile = (REPO / "config/sage.config.toml").read_text()
+    defaults = (REPO / "config/defaults.toml").read_text()
     for name in sorted(set(args.mcp)):
-        profile += "\n" + (REPO / "config/mcp" / f"{name}.toml").read_text()
+        defaults += "\n" + (REPO / "config/mcp" / f"{name}.toml").read_text()
     if args.with_hybrid:
         server = args.with_hybrid.resolve() / "plugins/mcp_server.py"
         if not server.is_file():
             raise ValueError(f"Hybrid SAGE server missing: {server}")
         # JSON quoted strings are also valid TOML basic strings.
-        profile += '\n[mcp_servers.hybrid-sage]\ncommand = "python3"\nargs = [' + json.dumps(str(server)) + ']\n'
-    tomllib.loads(profile)
+        defaults += '\n[mcp_servers.hybrid-sage]\ncommand = ' + json.dumps(sys.executable) + '\nargs = [' + json.dumps(str(server)) + ']\n'
+    settings = tomllib.loads(defaults)
+    managed_path = codex_home / "sage/managed-config.json"
+    if managed_path.exists():
+        # An omitted integration flag does not mean the user asked to remove it.
+        settings = merge_settings(json.loads(managed_path.read_text()), settings)
     global_agents = codex_home / "AGENTS.md"
     current = global_agents.read_text() if global_agents.exists() else ""
     plans = {
-        codex_home / "sage.config.toml": file_state(profile),
+        config: file_state(stage_config(config.read_text() if config.exists() else "", settings)),
+        codex_home / "sage/managed-config.json": file_state(json.dumps(settings, indent=2) + "\n"),
         global_agents: file_state(merge_instructions(current, (REPO / "config/AGENTS.md").read_text())),
     }
     for skill in sorted((REPO / "skills").iterdir()):
@@ -128,7 +212,7 @@ def install(args: argparse.Namespace) -> Path | None:
             plans[args.skills_dir.resolve() / skill.name] = {"kind": "symlink", "target": str(skill)}
     for agent in sorted((REPO / "agents").glob("*.toml")):
         plans[codex_home / "agents" / agent.name] = file_state(agent.read_text())
-    wrapper = '#!/usr/bin/env bash\nset -euo pipefail\nexport CODEX_HOME=' + shlex.quote(str(codex_home)) + '\nexec codex --profile sage "$@"\n'
+    wrapper = '#!/usr/bin/env bash\nset -euo pipefail\nexport CODEX_HOME=' + shlex.quote(str(codex_home)) + '\nexec codex "$@"\n'
     plans[args.bin_dir.resolve() / "codex-sage"] = file_state(wrapper, 0o755)
     doctor = ('#!/usr/bin/env bash\nset -euo pipefail\nexec python3 '
               + shlex.quote(str(REPO / "scripts/harness.py")) + ' doctor --codex-home '
@@ -142,6 +226,8 @@ def install(args: argparse.Namespace) -> Path | None:
         path = Path(name)
         if path not in plans and fingerprint(snapshot(path)) == installed_hash:
             plans[path] = {"kind": "absent"}
+    if snapshot(config) != config_before:
+        raise ValueError("config.toml changed while staging; retry with the updated configuration")
     entries = [{"path": str(p), "before": snapshot(p), "after": state} for p, state in plans.items()]
     if args.dry_run:
         for entry in entries:
@@ -149,7 +235,7 @@ def install(args: argparse.Namespace) -> Path | None:
         return None
     # Save the journal before any installed file changes. No auth files are read.
     entries.append({"path": str(latest), "before": snapshot(latest), "after": file_state(json.dumps({
-        str(p): fingerprint(state) for p, state in plans.items() if state["kind"] != "absent"
+        str(p): fingerprint(state) for p, state in plans.items() if state["kind"] != "absent" and p != config
     }, indent=2) + "\n")})
     backup_dir = codex_home / "sage/backups"
     backup_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -165,7 +251,7 @@ def install(args: argparse.Namespace) -> Path | None:
             apply_state(Path(entry["path"]), entry["before"])
         raise
     print(f"Installed {len(plans)} entries. Restart Codex to discover skills and agents.")
-    print("Launch profile: codex --profile sage (or codex-sage)")
+    print("SAGE loads automatically on ordinary Codex launches. Restart Codex; no wrapper or profile is required.")
     print(f"Restore: python3 {shlex.quote(str(REPO / 'scripts/harness.py'))} restore {shlex.quote(str(backup))}")
     return backup
 
@@ -185,9 +271,10 @@ def restore(backup: Path) -> None:
 def doctor(args: argparse.Namespace) -> None:
     check()
     home = args.codex_home.resolve()
-    profile = read_toml(home / "sage.config.toml")
-    if (home / "config.toml").exists():
-        read_toml(home / "config.toml")
+    config = read_toml(home / "config.toml")
+    managed = json.loads((home / "sage/managed-config.json").read_text())
+    if merge_settings(config, managed) != config:
+        raise ValueError("SAGE settings changed in config.toml; review the passive configuration")
     latest = json.loads((home / "sage/latest.json").read_text())
     drift = [p for p, digest in latest.items() if fingerprint(snapshot(Path(p))) != digest]
     if drift:
@@ -197,16 +284,16 @@ def doctor(args: argparse.Namespace) -> None:
             raise ValueError(f"Broken skill link: {path}")
     if (home / "AGENTS.override.md").exists():
         print("Notice: AGENTS.override.md takes precedence over the installed global AGENTS.md.")
-    print(f"Installation intact. Profile MCP servers: {', '.join(profile.get('mcp_servers', {})) or 'none'}")
+    print(f"Installation intact. Passive MCP servers: {', '.join(managed.get('mcp_servers', {})) or 'none'}")
     if args.native:
         binary = shutil.which("codex")
         if not binary:
             raise ValueError("Codex CLI not found on PATH")
-        result = subprocess.run([binary, "--profile", "sage", "mcp", "list", "--json"],
+        result = subprocess.run([binary, "mcp", "list", "--json"],
                                 env={**os.environ, "CODEX_HOME": str(home)}, capture_output=True, text=True, timeout=30)
         if result.returncode:
-            raise ValueError("Native config validation failed; run codex --profile sage mcp list")
-        print("Installed Codex loaded the profile and MCP configuration.")
+            raise ValueError("Native config validation failed; run codex mcp list")
+        print("Ordinary Codex loaded the passive MCP configuration.")
 
 
 def main() -> int:
@@ -223,7 +310,7 @@ def main() -> int:
             command.add_argument("--with-hybrid", type=Path, metavar="REPO", help="Register a local hybrid-sage checkout")
             command.add_argument("--dry-run", action="store_true")
         else:
-            command.add_argument("--native", action="store_true", help="Also ask installed Codex to validate the profile")
+            command.add_argument("--native", action="store_true", help="Also ask ordinary Codex to validate its configuration")
     sub.add_parser("restore").add_argument("backup", type=Path)
     args = parser.parse_args()
     try:
@@ -235,7 +322,7 @@ def main() -> int:
             doctor(args)
         else:
             check()
-    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+    except (OSError, ValueError, KeyError, TimeoutError, subprocess.SubprocessError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0

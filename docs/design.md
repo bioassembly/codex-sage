@@ -18,9 +18,14 @@ useful execution capabilities without making every task pay for every workflow.
 
 ## Configuration boundaries
 
-`sage.config.toml` is a file-based profile. It adds live search and allows up to
-three concurrent spawned native agent threads. It neither selects a model nor
-weakens permissions. A session can still have fewer tools because of managed policy,
+Selected SAGE defaults are merged into the ordinary `$CODEX_HOME/config.toml`
+beside your existing settings. SAGE adds live web search and allows up to three
+concurrent spawned native agent threads; it neither selects a model nor weakens
+permissions, and unrelated model, reasoning, UI, provider, plugin, and
+permission settings are preserved. A separate `sage.config.toml` profile
+installed by older versions is retired only if its recorded state is unchanged,
+and the legacy `codex-sage` wrapper remains as a compatibility alias to plain
+`codex`. A session can still have fewer tools because of managed policy,
 account availability, or client capabilities. A skill cannot grant a missing tool.
 
 Skills link from the maintained source tree into a native discovery location.
@@ -28,16 +33,23 @@ Custom agent files contain the current required `name`, `description`, and
 `developer_instructions` fields. They do not pretend a custom agent can override
 the parent's sandbox, provider, or MCP configuration.
 
-The installer does not modify the base TOML, shell startup files, authentication,
-plugin registrations, active model servers, or scheduler jobs. It refuses real
-directory collisions instead of replacing personal skill trees. It records only
-the paths it installs, preserves unrelated entries, and retires old installer-owned
-entries only when their recorded state is unchanged.
+The installer merges only selected defaults and MCP fields into `$CODEX_HOME/config.toml` and
+does not modify shell startup files, authentication, plugin registrations,
+active model servers, or scheduler jobs. It refuses real directory collisions
+instead of replacing personal skill trees. It records only the paths it
+installs, preserves unrelated entries, and retires old installer-owned entries
+only when their recorded state is unchanged.
+
+Configuration changes are staged through Codex's native `config/batchWrite` API
+in a temporary home. The installer checks that every unrelated parsed value is
+preserved before touching the live configuration; the native writer also keeps
+comments. A concurrent edit to the live file aborts installation. Diagnostics
+check managed fields while allowing later user changes to model and UI settings.
 
 ## Official references
 
 - [Configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference)
-  for profile files, web search, MCP tables, and concurrency.
+  for `config.toml` entries, web search, MCP tables, and concurrency.
 - [Build skills](https://learn.chatgpt.com/docs/build-skills) for native discovery,
   symlink support, and progressive loading.
 - [Subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents) for
