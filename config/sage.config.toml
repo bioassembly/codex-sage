@@ -1,0 +1,7 @@
+# Codex CLI 0.167+ profile: overlays config.toml without replacing it.
+# Model, reasoning effort, plugins, and permissions inherit from the user.
+web_search = "live"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
