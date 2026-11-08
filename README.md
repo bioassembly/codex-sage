@@ -74,22 +74,22 @@ See Hybrid SAGE's fleet policy for model allowlists and privacy handling.
 
 ### Choose an assistant or disable hybrid mode
 
-Install Hybrid SAGE's CLI once with `bash ../hybrid-sage/install.sh`, then:
+Use the installed `sage` skill inside the harness:
 
-```bash
-sage models --provider opencode
-sage model opencode/glm-5.3-flash-free
-sage hybrid off
-sage hybrid on
-sage hybrid status
+```text
+/sage
+/sage models
+/sage model opencode/glm-5.3-flash-free
+/sage off
+/sage on
+/sage status
 ```
 
-The choice persists across Codex, Antigravity, and OpenCode. Disabling hybrid mode
-stops new worker jobs and cross-harness consultations; the frontier model continues
-directly, and running jobs remain available to poll. Re-enabling retains your
-selected assistant. Paid or unknown-price model selection requires an explicit
-`--allow-paid`; there is no silent paid fallback. You can also ask the assistant
-to list models, select one, or turn hybrid mode off/on through `configure_fleet`.
+The app exposes enabled skills in its slash menu; clients using skill mentions
+can use `$sage` or `/skills`. The controls call `configure_fleet` over MCP, so no
+SAGE terminal CLI is needed. The choice persists across all three harnesses. Off
+blocks new delegation; running jobs can finish. On retains the selected assistant.
+Paid or unknown-price selections require explicit `--allow-paid`.
 
 ## Included skills
 

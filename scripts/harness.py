@@ -210,6 +210,12 @@ def install(args: argparse.Namespace) -> Path | None:
     for skill in sorted((REPO / "skills").iterdir()):
         if (skill / "SKILL.md").is_file():
             plans[args.skills_dir.resolve() / skill.name] = {"kind": "symlink", "target": str(skill)}
+    if args.with_hybrid:
+        for name in ('model-router', 'sage'):
+            skill = args.with_hybrid.resolve() / 'skills' / name
+            if not (skill / 'SKILL.md').is_file():
+                raise ValueError(f"Hybrid SAGE skill missing; update the checkout: {skill}")
+            plans[args.skills_dir.resolve() / name] = {'kind': 'symlink', 'target': str(skill)}
     for agent in sorted((REPO / "agents").glob("*.toml")):
         plans[codex_home / "agents" / agent.name] = file_state(agent.read_text())
     wrapper = '#!/usr/bin/env bash\nset -euo pipefail\nexport CODEX_HOME=' + shlex.quote(str(codex_home)) + '\nexec codex "$@"\n'

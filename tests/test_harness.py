@@ -76,12 +76,17 @@ class InstallationTests(unittest.TestCase):
         server = hybrid / "plugins/mcp_server.py"
         server.parent.mkdir(parents=True)
         server.write_text("# fixture")
+        for name in ('model-router', 'sage'):
+            skill = hybrid / 'skills' / name
+            skill.mkdir(parents=True)
+            (skill / 'SKILL.md').write_text('fixture')
         self.args.with_hybrid = hybrid
         self.args.mcp = ["deepwiki", "context7", "context7", "openai-docs"]
         harness.install(self.args)
         config = tomllib.loads(self.config.read_text())
         self.assertEqual(len(config["mcp_servers"]), 4)
         self.assertEqual(config["mcp_servers"]["hybrid-sage"]["args"], [str(server)])
+        self.assertTrue((self.args.skills_dir / 'sage/SKILL.md').exists())
 
     def test_restore_preserves_post_install_edits_without_partial_restore(self):
         backup = harness.install(self.args)
