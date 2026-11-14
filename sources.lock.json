@@ -1,0 +1,33 @@
+{
+  "reviewed": "2026-11-14",
+  "note": "Reviewed source revisions, not automatically installed upstream packages. Skills are maintained Codex adaptations.",
+  "sources": [
+    {
+      "repository": "bioassembly/antigravity-sage",
+      "revision": "64e7da7e271b649a4eea5218837441d48ad94e7d",
+      "paths": ["skills", "config/mcp_config.json", "REGISTRY.md"]
+    },
+    {
+      "repository": "bioassembly/opencode-sage",
+      "revision": "3c0f70ffc72e194ca5c02045f1f880bc31d68e9c",
+      "paths": ["reference/skills", "reference/opencode.template.json", "docs/components/mcp.md"]
+    },
+    {
+      "repository": "DietrichGebert/ponytail",
+      "revision": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
+      "paths": ["skills/ponytail/SKILL.md", "LICENSE"],
+      "license": "MIT"
+    },
+    {
+      "repository": "mattpocock/skills",
+      "revision": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "paths": ["skills/productivity/grill-me/SKILL.md", "skills/productivity/grilling/SKILL.md", "LICENSE"],
+      "license": "MIT"
+    }
+  ],
+  "mcp_packages": {
+    "serena-agent": "2.1.0",
+    "@playwright/mcp": "0.0.85",
+    "@modelcontextprotocol/server-memory": "2.1.1"
+  }
+}

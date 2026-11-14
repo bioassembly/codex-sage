@@ -18,8 +18,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix="codex-sage-smoke-") as temp:
         root = Path(temp)
         args = argparse.Namespace(codex_home=root / "codex", skills_dir=root / ".agents/skills",
-                                  bin_dir=root / "bin", mcp=["context7", "deepwiki", "openai-docs"],
-                                  with_hybrid=None, dry_run=False, native=True)
+                                  bin_dir=root / "bin", mcp=list(harness.mcp_templates()),
+                                  with_hybrid=None, disable_mcp=['hybrid-sage'], dry_run=False, native=True)
         backup = harness.install(args)
         try:
             harness.doctor(args)
@@ -31,6 +31,8 @@ def main():
                 raise RuntimeError(result.stderr)
             json.loads(result.stdout)
             assert "sage-genomics" in result.stdout, "Native skill discovery failed"
+            for name in ('ponytail', 'grill-me', 'sage-mcp-builder', 'sage-token-efficiency'):
+                assert name in result.stdout, f"Native skill discovery failed: {name}"
             assert "sage-reviewer" in result.stdout, "Native custom agent discovery failed"
             print("Ordinary Codex discovered the installed skills and custom agents without a profile.")
             result = subprocess.run([binary, "app-server", "--strict-config", "--print-startup-config"],

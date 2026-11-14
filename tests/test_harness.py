@@ -27,7 +27,7 @@ class InstallationTests(unittest.TestCase):
         self.args = argparse.Namespace(codex_home=self.root / "codex",
                                        skills_dir=self.root / "skills",
                                        bin_dir=self.root / "bin", mcp=[],
-                                       with_hybrid=None, dry_run=False)
+                                       with_hybrid=None, disable_mcp=[], dry_run=False)
         self.args.codex_home.mkdir()
         self.config = self.args.codex_home / "config.toml"
         self.config.write_text('# Keep this comment\nmodel = "user-selected"\n[features]\napps = true\n')
@@ -217,7 +217,8 @@ enabled = false
         harness.install(self.args)
         merged = tomllib.loads(self.config.read_text())
         expected = harness.merge_settings(tomllib.loads(original), {
-            'web_search': 'live', 'agents': {'enabled': True, 'max_concurrent_threads_per_session': 3}})
+            'web_search': 'live', 'tool_output_token_limit': 6000,
+            'agents': {'enabled': True, 'max_concurrent_threads_per_session': 3}})
         self.assertEqual(merged, expected)
         self.assertIn('# User-owned comment', self.config.read_text())
         self.assertFalse((self.args.codex_home / 'sage.config.toml').exists())
@@ -268,6 +269,109 @@ enabled = false
         self.assertEqual(desired['mcp_servers']['context7']['url'], 'https://mcp.context7.com/mcp')
         self.args.native = False
         harness.doctor(self.args)
+
+    def test_reinstall_preserves_user_disabled_server_and_reasoning(self):
+        self.args.mcp = ['context7']
+        harness.install(self.args)
+        managed_path = self.args.codex_home / 'sage/managed-config.json'
+        managed = json.loads(managed_path.read_text())
+        managed['mcp_servers']['context7']['enabled'] = True
+        managed_path.write_text(json.dumps(managed))
+        self.config.write_text(self.config.read_text() + '\n')
+        content = self.config.read_text().replace('[mcp_servers.context7]',
+                                                '[mcp_servers.context7]\nenabled = false')
+        self.config.write_text('model_reasoning_effort = "max"\n' + content)
+        harness.install(self.args)
+        result = tomllib.loads(self.config.read_text())
+        self.assertFalse(result['mcp_servers']['context7']['enabled'])
+        self.assertEqual(result['model_reasoning_effort'], 'max')
+        self.args.native = False
+        harness.doctor(self.args)
+
+    def test_explicit_disable_is_reversible_and_survives_reinstall(self):
+        self.args.mcp = ['deepwiki']
+        self.args.disable_mcp = ['deepwiki', 'hybrid-sage']
+        first = harness.install(self.args)
+        result = tomllib.loads(self.config.read_text())
+        self.assertFalse(result['mcp_servers']['deepwiki']['enabled'])
+        self.assertEqual(result['mcp_servers']['deepwiki']['url'], 'https://mcp.deepwiki.com/mcp')
+        self.assertNotIn('hybrid-sage', result['mcp_servers'])
+        self.args.mcp = []
+        self.args.disable_mcp = []
+        second = harness.install(self.args)
+        self.assertFalse(tomllib.loads(self.config.read_text())['mcp_servers']['deepwiki']['enabled'])
+        harness.restore(second)
+        harness.restore(first)
+        self.assertEqual(self.config.read_bytes(), self.original)
+
+    def test_disabling_user_owned_server_does_not_adopt_its_template(self):
+        self.config.write_text('[mcp_servers.context7]\nurl = "https://example.com/private-docs"\n'
+                               '[mcp_servers.playwright]\ncommand = "private-browser"\nargs = ["--profile", "personal"]\n')
+        before = tomllib.loads(self.config.read_text())['mcp_servers']
+        self.args.disable_mcp = ['context7', 'playwright']
+        harness.install(self.args)
+        self.args.disable_mcp = []
+        harness.install(self.args)
+        after = tomllib.loads(self.config.read_text())['mcp_servers']
+        self.assertEqual(after, {name: {**server, 'enabled': False} for name, server in before.items()})
+
+    def test_doctor_accepts_user_toggle_after_install(self):
+        self.args.mcp = ['context7']
+        harness.install(self.args)
+        self.config.write_text(self.config.read_text().replace(
+            '[mcp_servers.context7]', '[mcp_servers.context7]\nenabled = false'))
+        self.args.native = False
+        harness.doctor(self.args)
+
+    def test_explicit_user_defaults_are_preserved(self):
+        self.config.write_text('web_search = "cached"\ntool_output_token_limit = 9000\n'
+                               '[agents]\nenabled = false\nmax_concurrent_threads_per_session = 1\n')
+        expected = tomllib.loads(self.config.read_text())
+        harness.install(self.args)
+        self.assertEqual(tomllib.loads(self.config.read_text()), expected)
+
+    def test_update_refreshes_selected_template_and_preserves_disable(self):
+        self.args.mcp = ['context7']
+        self.args.disable_mcp = ['context7']
+        harness.install(self.args)
+        templates = harness.mcp_templates()
+        templates['context7']['mcp_servers']['context7']['url'] = 'https://example.com/new-docs'
+        self.args.mcp = []
+        self.args.disable_mcp = []
+        with patch.object(harness, 'mcp_templates', return_value=templates):
+            harness.install(self.args)
+        server = tomllib.loads(self.config.read_text())['mcp_servers']['context7']
+        self.assertEqual(server['url'], 'https://example.com/new-docs')
+        self.assertFalse(server['enabled'])
+
+    def test_memory_path_is_private_and_resolved_for_custom_home(self):
+        self.args.codex_home = self.root / 'codex "quoted" home'
+        self.args.mcp = ['memory']
+        harness.install(self.args)
+        config = tomllib.loads((self.args.codex_home / 'config.toml').read_text())
+        path = config['mcp_servers']['memory']['env']['MEMORY_FILE_PATH']
+        self.assertEqual(path, str(self.args.codex_home / 'sage/memory.json'))
+        self.assertNotIn('__CODEX_SAGE', path)
+
+    def test_disabling_hybrid_retires_only_its_unchanged_skill_links(self):
+        hybrid = self.root / 'hybrid'
+        server = hybrid / 'plugins/mcp_server.py'
+        server.parent.mkdir(parents=True)
+        server.write_text('# fixture')
+        for name in ('model-router', 'sage'):
+            skill = hybrid / 'skills' / name
+            skill.mkdir(parents=True)
+            (skill / 'SKILL.md').write_text('fixture')
+        self.args.with_hybrid = hybrid
+        harness.install(self.args)
+        self.assertTrue((self.args.skills_dir / 'model-router').is_symlink())
+        self.args.with_hybrid = None
+        self.args.disable_mcp = ['hybrid-sage']
+        harness.install(self.args)
+        self.assertFalse((self.args.skills_dir / 'model-router').is_symlink())
+        self.assertFalse((self.args.skills_dir / 'sage').is_symlink())
+        self.assertTrue((self.args.skills_dir / 'sage-design').is_symlink())
+        self.assertFalse(tomllib.loads(self.config.read_text())['mcp_servers']['hybrid-sage']['enabled'])
 
 
 if __name__ == "__main__":

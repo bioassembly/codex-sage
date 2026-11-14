@@ -1,6 +1,7 @@
 # Passive defaults merged into the user's ordinary config.toml.
 # Model, reasoning effort, plugins, and permissions remain user-controlled.
 web_search = "live"
+tool_output_token_limit = 6000
 
 [agents]
 enabled = true

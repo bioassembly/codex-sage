@@ -91,11 +91,37 @@ def merge_settings(current: dict, additions: dict) -> dict:
     return merged
 
 
+def respect_user_choices(settings: dict, current: dict) -> dict:
+    """Defaults and MCP on/off switches never override explicit user choices."""
+    result = copy.deepcopy(settings)
+
+    def preserve(target: dict, defaults: dict, live: dict) -> None:
+        for key, value in defaults.items():
+            if key not in live:
+                continue
+            if isinstance(value, dict):
+                if isinstance(live[key], dict) and isinstance(target.get(key), dict):
+                    preserve(target[key], value, live[key])
+            else:
+                target[key] = copy.deepcopy(live[key])
+
+    preserve(result, read_toml(REPO / 'config/defaults.toml'), current)
+    for name, server in result.get('mcp_servers', {}).items():
+        live = current.get('mcp_servers', {}).get(name)
+        if isinstance(live, dict) and ('enabled' in live or 'enabled' in server):
+            server['enabled'] = live.get('enabled', True)
+    return result
+
+
+def mcp_templates() -> dict:
+    return {path.stem: read_toml(path) for path in sorted((REPO / 'config/mcp').glob('*.toml'))}
+
+
 def stage_config(current: str, settings: dict) -> str:
     """Use Codex's native TOML writer in isolation, before changing live files."""
     binary = shutil.which("codex")
     if not binary:
-        raise ValueError("Codex CLI 0.167+ is required to merge configuration safely")
+        raise ValueError("Codex CLI 0.169+ is required to merge configuration safely")
     edits = []
 
     def flatten(values: dict, prefix: str = "") -> None:
@@ -158,6 +184,15 @@ def stage_config(current: str, settings: dict) -> str:
 def check() -> None:
     for path in sorted(REPO.rglob("*.toml")):
         read_toml(path)
+    sources = json.loads((REPO / 'sources.lock.json').read_text())
+    for source in sources['sources']:
+        if not re.fullmatch(r'[0-9a-f]{40}', source['revision']):
+            raise ValueError(f"Invalid reviewed source revision: {source['repository']}")
+    package_args = {arg for template in mcp_templates().values()
+                    for server in template['mcp_servers'].values() for arg in server.get('args', [])}
+    for package, version in sources['mcp_packages'].items():
+        if not {f'{package}@{version}', f'{package}=={version}'} & package_args:
+            raise ValueError(f"MCP package pin differs from sources.lock.json: {package}")
     for path in sorted((REPO / "agents").glob("*.toml")):
         data = read_toml(path)
         if data.get("name") != path.stem or not all(data.get(k) for k in ("description", "developer_instructions")):
@@ -184,22 +219,34 @@ def install(args: argparse.Namespace) -> Path | None:
     codex_home = args.codex_home.resolve()
     config = codex_home / "config.toml"
     config_before = snapshot(config)
-    if config.exists():
-        read_toml(config)  # Fail before mutation if existing config is malformed.
-    defaults = (REPO / "config/defaults.toml").read_text()
-    for name in sorted(set(args.mcp)):
-        defaults += "\n" + (REPO / "config/mcp" / f"{name}.toml").read_text()
+    live_config = read_toml(config) if config.exists() else {}
+    managed_path = codex_home / "sage/managed-config.json"
+    settings = json.loads(managed_path.read_text()) if managed_path.exists() else {}
+    selected = set(args.mcp)
+    templates = mcp_templates()
+    # Refresh previously selected templates on update, while honoring live toggles.
+    for name, template in templates.items():
+        managed_servers = settings.get('mcp_servers', {})
+        if any({'url', 'command'} & managed_servers.get(server_id, {}).keys()
+               for server_id in template['mcp_servers']):
+            selected.add(name)
+    settings = merge_settings(settings, read_toml(REPO / 'config/defaults.toml'))
+    for name in sorted(selected):
+        template = copy.deepcopy(templates[name])
+        if name == 'memory':
+            template['mcp_servers']['memory']['env']['MEMORY_FILE_PATH'] = str(codex_home / 'sage/memory.json')
+        settings = merge_settings(settings, template)
     if args.with_hybrid:
         server = args.with_hybrid.resolve() / "plugins/mcp_server.py"
         if not server.is_file():
             raise ValueError(f"Hybrid SAGE server missing: {server}")
-        # JSON quoted strings are also valid TOML basic strings.
-        defaults += '\n[mcp_servers.hybrid-sage]\ncommand = ' + json.dumps(sys.executable) + '\nargs = [' + json.dumps(str(server)) + ']\n'
-    settings = tomllib.loads(defaults)
-    managed_path = codex_home / "sage/managed-config.json"
-    if managed_path.exists():
-        # An omitted integration flag does not mean the user asked to remove it.
-        settings = merge_settings(json.loads(managed_path.read_text()), settings)
+        settings = merge_settings(settings, {'mcp_servers': {'hybrid-sage': {
+            'command': sys.executable, 'args': [str(server)]}}})
+    settings = respect_user_choices(settings, live_config)
+    for name in getattr(args, 'disable_mcp', []):
+        server_id = next(iter(templates[name]['mcp_servers'])) if name in templates else name
+        if server_id in settings.get('mcp_servers', {}) or server_id in live_config.get('mcp_servers', {}):
+            settings.setdefault('mcp_servers', {}).setdefault(server_id, {})['enabled'] = False
     global_agents = codex_home / "AGENTS.md"
     current = global_agents.read_text() if global_agents.exists() else ""
     plans = {
@@ -210,7 +257,10 @@ def install(args: argparse.Namespace) -> Path | None:
     for skill in sorted((REPO / "skills").iterdir()):
         if (skill / "SKILL.md").is_file():
             plans[args.skills_dir.resolve() / skill.name] = {"kind": "symlink", "target": str(skill)}
-    if args.with_hybrid:
+    hybrid_state = settings.get('mcp_servers', {}).get('hybrid-sage',
+                        live_config.get('mcp_servers', {}).get('hybrid-sage'))
+    hybrid_enabled = hybrid_state is not None and hybrid_state.get('enabled', True)
+    if args.with_hybrid and hybrid_enabled:
         for name in ('model-router', 'sage'):
             skill = args.with_hybrid.resolve() / 'skills' / name
             if not (skill / 'SKILL.md').is_file():
@@ -230,6 +280,10 @@ def install(args: argparse.Namespace) -> Path | None:
     previous = json.loads(latest.read_text()) if latest.exists() else {}
     for name, installed_hash in previous.items():
         path = Path(name)
+        if (hybrid_enabled and path.parent == args.skills_dir.resolve()
+                and path.name in ('sage', 'model-router') and path not in plans
+                and fingerprint(snapshot(path)) == installed_hash):
+            plans[path] = snapshot(path)
         if path not in plans and fingerprint(snapshot(path)) == installed_hash:
             plans[path] = {"kind": "absent"}
     if snapshot(config) != config_before:
@@ -237,7 +291,8 @@ def install(args: argparse.Namespace) -> Path | None:
     entries = [{"path": str(p), "before": snapshot(p), "after": state} for p, state in plans.items()]
     if args.dry_run:
         for entry in entries:
-            print(f"Would install: {entry['path']}")
+            action = 'remove' if entry['after']['kind'] == 'absent' else 'install'
+            print(f"Would {action}: {entry['path']}")
         return None
     # Save the journal before any installed file changes. No auth files are read.
     entries.append({"path": str(latest), "before": snapshot(latest), "after": file_state(json.dumps({
@@ -279,7 +334,7 @@ def doctor(args: argparse.Namespace) -> None:
     home = args.codex_home.resolve()
     config = read_toml(home / "config.toml")
     managed = json.loads((home / "sage/managed-config.json").read_text())
-    if merge_settings(config, managed) != config:
+    if merge_settings(config, respect_user_choices(managed, config)) != config:
         raise ValueError("SAGE settings changed in config.toml; review the passive configuration")
     latest = json.loads((home / "sage/latest.json").read_text())
     drift = [p for p, digest in latest.items() if fingerprint(snapshot(Path(p))) != digest]
@@ -290,7 +345,11 @@ def doctor(args: argparse.Namespace) -> None:
             raise ValueError(f"Broken skill link: {path}")
     if (home / "AGENTS.override.md").exists():
         print("Notice: AGENTS.override.md takes precedence over the installed global AGENTS.md.")
-    print(f"Installation intact. Passive MCP servers: {', '.join(managed.get('mcp_servers', {})) or 'none'}")
+    servers = config.get('mcp_servers', {})
+    enabled = [name for name in managed.get('mcp_servers', {}) if servers.get(name, {}).get('enabled', True)]
+    disabled = [name for name in servers if not servers[name].get('enabled', True)]
+    print(f"Installation intact. Enabled SAGE MCP servers: {', '.join(enabled) or 'none'}")
+    print(f"Disabled MCP servers: {', '.join(disabled) or 'none'}")
     if args.native:
         binary = shutil.which("codex")
         if not binary:
@@ -312,7 +371,9 @@ def main() -> int:
         command.add_argument("--skills-dir", type=Path, default=Path.home() / ".agents/skills")
         if name == "install":
             command.add_argument("--bin-dir", type=Path, default=Path.home() / ".local/bin")
-            command.add_argument("--mcp", action="append", choices=["context7", "deepwiki", "openai-docs"], default=[])
+            command.add_argument("--mcp", action="append", choices=sorted(mcp_templates()), default=[])
+            command.add_argument("--disable-mcp", action="append", choices=sorted(mcp_templates()) + ['hybrid-sage'], default=[],
+                                 help="Keep a registered server disabled; harmless when absent")
             command.add_argument("--with-hybrid", type=Path, metavar="REPO", help="Register a local hybrid-sage checkout")
             command.add_argument("--dry-run", action="store_true")
         else:

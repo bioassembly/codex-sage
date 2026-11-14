@@ -12,15 +12,15 @@ useful execution capabilities without making every task pay for every workflow.
 | Mandatory TDD/worktree/interview on all work | Match validation and isolation to behavior and risk |
 | Automatic large binary tool installation | Task-relevant static inspection with installed tools; optional REA |
 | Always-connected reasoning/fetch/memory MCP | Native tools, plugins, project notes, and optional distinct integrations |
-| Fixed frontier implementation loop | Hybrid workers execute; frontier plans, inspects artifacts, and accepts revisions |
+| Fixed frontier implementation loop | Direct Codex execution; delegation only when requested |
 | Large copied scientific skill manuals | Small scientific workflows linked to canonical documentation |
 | Destructive global synchronization | Installer-owned paths, preflight validation, private journals, resumable restore |
 
 ## Configuration boundaries
 
 Selected SAGE defaults are merged into the ordinary `$CODEX_HOME/config.toml`
-beside your existing settings. SAGE adds live web search and allows up to three
-concurrent spawned native agent threads; it neither selects a model nor weakens
+beside your existing settings. SAGE supplies live web search, a tool-history budget,
+and up to three concurrent native agent threads only where unset; it neither selects a model nor weakens
 permissions, and unrelated model, reasoning, UI, provider, plugin, and
 permission settings are preserved. A separate `sage.config.toml` profile
 installed by older versions is retired only if its recorded state is unchanged,
@@ -44,7 +44,10 @@ Configuration changes are staged through Codex's native `config/batchWrite` API
 in a temporary home. The installer checks that every unrelated parsed value is
 preserved before touching the live configuration; the native writer also keeps
 comments. A concurrent edit to the live file aborts installation. Diagnostics
-check managed fields while allowing later user changes to model and UI settings.
+check managed fields while allowing later user changes to model, UI, default
+preferences, and MCP enabled states. Reinstalls refresh selected templates and
+preserve live enabled states. An explicit disable flag takes precedence. Hybrid
+skills retire only when unchanged and the integration is disabled or absent.
 
 ## Official references
 
@@ -57,5 +60,5 @@ check managed fields while allowing later user changes to model and UI settings.
 - [AGENTS.md guidance](https://developers.openai.com/codex/guides/agents-md/) for
   instruction discovery and overrides.
 
-These formats were checked against Codex CLI 0.167.0 on 2026-11-08. Run the native
+These formats were checked against Codex CLI 0.169.0 on 2026-11-14. Run the native
 smoke test after upgrading; configuration formats can change.

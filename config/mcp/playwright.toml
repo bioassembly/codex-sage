@@ -1,0 +1,7 @@
+# Opt in where the current client lacks browser interaction.
+[mcp_servers.playwright]
+command = "npx"
+args = ["--yes", "@playwright/mcp@0.0.85", "--headless", "--isolated"]
+startup_timeout_sec = 90
+tool_timeout_sec = 120
+omit_tools_from = ["direct"]

@@ -2,3 +2,4 @@
 url = "https://mcp.context7.com/mcp"
 startup_timeout_sec = 20
 tool_timeout_sec = 60
+omit_tools_from = ["direct"]

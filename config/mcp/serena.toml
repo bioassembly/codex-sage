@@ -1,0 +1,7 @@
+# Activate the task's repository with activate_project before symbol operations.
+[mcp_servers.serena]
+command = "uvx"
+args = ["--from", "serena-agent==2.1.0", "serena", "start-mcp-server", "--context", "codex", "--agent-interface", "tools", "--open-web-dashboard", "false", "--enable-gui-log-window", "false"]
+startup_timeout_sec = 90
+tool_timeout_sec = 120
+omit_tools_from = ["direct"]

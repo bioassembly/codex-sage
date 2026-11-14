@@ -1,21 +1,14 @@
 # Codex SAGE
 
-**Codex SAGE (State-of-the-Art Agentic Genomics & Engineering Harness)** — a
-reproducible, high-performance configuration harness for OpenAI Codex, engineered
-to match and exceed the capabilities of modern agentic coding and bioinformatics
-harnesses: frontier planning and review, free OpenCode worker orchestration,
-focused skills, specialist agents, optional MCP tools, and reversible installation.
-
-SAGE adapts the useful workflows from
-[antigravity-sage](https://github.com/bioassembly/antigravity-sage) and
-[opencode-sage](https://github.com/bioassembly/opencode-sage) to Codex's native
-configuration, skill discovery, and agent system. It adds procedures and tool
-access; it does not change model weights or claim benchmark gains without evaluation.
+A reproducible Codex harness with 28 focused skills, three specialist agents,
+optional MCP integrations, and reversible installation. Work executes in Codex
+by default. Hybrid SAGE is optional and never enabled by the standard install.
 
 ## Install
 
-Requires Python 3.11+, Bash, and Codex CLI 0.167 or newer with standalone custom
-agent definitions. The native smoke test was run on 0.167.0.
+Requires Python 3.11+, Bash, and Codex CLI 0.169+. Native validation and CI use
+0.169.0. Model, reasoning effort, authentication, plugins, and permissions remain
+user-controlled.
 
 ```bash
 git clone https://github.com/bioassembly/codex-sage.git
@@ -24,141 +17,131 @@ bash scripts/activate.sh
 codex
 ```
 
-For the full cross-harness workflow, clone
-[hybrid-sage](https://github.com/bioassembly/hybrid-sage) alongside this checkout:
+For documentation and semantic code navigation, with Hybrid disabled:
 
 ```bash
-bash scripts/activate.sh --with-hybrid ../hybrid-sage --mcp context7 --mcp deepwiki
-codex
+bash scripts/activate.sh --mcp context7 --mcp deepwiki --mcp openai-docs --mcp serena --disable-mcp hybrid-sage
 ```
 
-The installer links 15 skills into `~/.agents/skills`, installs three agent files
-under `$CODEX_HOME/agents`, merges a marked section into `$CODEX_HOME/AGENTS.md`,
-and merges selected SAGE defaults and any requested MCP servers into the ordinary
-`$CODEX_HOME/config.toml`, preserving your unrelated model, reasoning, UI,
-provider, plugin, and permission settings. `$CODEX_HOME` defaults to `~/.codex`.
-It also installs `codex-sage-doctor` into `~/.local/bin`, and keeps `codex-sage`
-as a compatibility alias that simply runs plain `codex`; ensure that directory is
-on `PATH`. Keep this checkout in place because skills link to it.
+The installer links skills into `~/.agents/skills`, installs agent files under
+`$CODEX_HOME/agents`, replaces only its marked global guidance, and merges selected
+settings into `$CODEX_HOME/config.toml` using Codex's native TOML writer.
+`$CODEX_HOME` defaults to `~/.codex`. Keep this checkout in place: skill links point
+to it. Launch plain `codex`; no profile or wrapper is required.
 
-Launch plain `codex` — no extra profile or wrapper launch is required. The merged
-config adds live web search, agent concurrency, and the selected MCP servers
-alongside your existing settings, including user-configured MCP servers. The
-installer uses Codex's native TOML writer to preserve unrelated settings and
-comments, does not touch `auth.json`, and snapshots originals under `$CODEX_HOME/sage/backups` for
-restore. A `sage.config.toml` profile installed by older versions is retired
-only if unchanged.
+Existing explicit defaults and MCP on/off choices survive updates, including a
+disabled Hybrid server. Omitted MCP flags do not remove registered servers.
+Previously selected templates refresh from the tracked source on reinstall.
+`--mcp` registers a capability; it does not override an existing disabled choice.
+To enable a deliberately disabled server, explicitly edit its `enabled` setting.
+`--disable-mcp` is repeatable and harmless when the server is absent. Unchanged,
+installer-owned Hybrid skill links retire when Hybrid is disabled.
 
-## Frontier planner, worker execution, frontier review
+## Skills
 
-With Hybrid SAGE connected, Codex owns problem framing, decomposition, consequential
-decisions, and final review. OpenCode workers perform bounded implementation and
-test loops using an explicitly permitted free model. Independent tasks can run
-as asynchronous jobs; overlapping edits need isolated worktrees.
-
-1. Inspect `fleet_status` and `list_worker_models`; verify the worker's model and
-   free/local policy rather than treating an installed CLI as a healthy model.
-2. Give `delegate_local` a concrete task, owned paths, acceptance checks, and an
-   artifact/output location. Keep complete output on disk and return a short summary.
-3. Poll the job to completion. Codex inspects the actual diff and artifacts, runs
-   checks, and requests revisions or accepts the result. Worker confidence is not
-   a quality gate.
-4. Use `consult_codex` from another harness for a frontier consultation, or
-   `escalate_task` for Antigravity when available. Child workers must not recursively
-   dispatch back into the fleet.
-
-Free service availability and rate limits belong to the provider; SAGE cannot
-guarantee unlimited capacity. Free hosted models are not private local models.
-Unavailable workers fall back to direct execution without a silent paid-model swap.
-See Hybrid SAGE's fleet policy for model allowlists and privacy handling.
-
-### Choose an assistant or disable hybrid mode
-
-Use the installed `sage` skill inside the harness:
-
-```text
-/sage
-/sage models
-/sage model opencode/glm-5.3-flash-free
-/sage off
-/sage on
-/sage status
-```
-
-The app exposes enabled skills in its slash menu; clients using skill mentions
-can use `$sage` or `/skills`. The controls call `configure_fleet` over MCP, so no
-SAGE terminal CLI is needed. The choice persists across all three harnesses. Off
-blocks new delegation; running jobs can finish. On retains the selected assistant.
-Paid or unknown-price selections require explicit `--allow-paid`.
-
-## Included skills
-
-| Area | Skills |
+| Workflow | Skills |
 | --- | --- |
-| Engineering | `sage-debug`, `sage-design`, `sage-spec`, `sage-tickets`, `sage-review` |
-| Scientific work | `sage-genomics`, `sage-sequence-analysis`, `sage-scientific-report`, `sage-results-package` |
-| Investigation | `sage-security-audit`, `sage-binary-inspection`, `sage-webapp-testing`, `sage-overnight` |
-| Continuity and evaluation | `sage-checkpoint`, `sage-harness-eval` |
+| Scope and decisions | `ponytail`, `grill-me`, `sage-design`, `sage-domain-modeling`, `sage-spec`, `sage-tickets` |
+| Engineering | `sage-debug`, `sage-test-design`, `sage-review`, `sage-mcp-builder`, `sage-repo-maintenance` |
+| Git | `sage-git-worktrees`, `sage-git-commit` |
+| Scientific work | `sage-genomics`, `sage-sequence-analysis`, `sage-scientific-report`, `sage-results-package`, `sage-fair-data` |
+| Investigation and documents | `sage-security-audit`, `sage-binary-inspection`, `sage-webapp-testing`, `sage-web-scraping`, `sage-pdf-editing`, `sage-explain` |
+| Continuity and evaluation | `sage-checkpoint`, `sage-overnight`, `sage-harness-eval`, `sage-token-efficiency` |
 
-Skills load their detailed instructions when relevant. Names use a `sage-` prefix
-to coexist with personal and plugin skills. Invoke explicitly with, for example,
-`$sage-genomics`, `$sage-checkpoint`, or `$sage-review`.
+Invoke a skill with `$ponytail`, `$grill-me`, or another name, or let Codex match
+its description. Skill bodies load when selected; the discovery catalog contains
+names, descriptions, and paths. Adding skills still has a metadata cost.
+Ponytail and grill-me are concise Codex adaptations with attribution, not their
+complete upstream plugins. Grill-me applies to requested interviews; it does not
+add confirmation gates to routine work. See [workflow mapping](REGISTRY.md).
 
-The agents are `sage-reviewer`, `sage-skeptic`, and `sage-bioinformatician`. They
-inherit the parent model and permissions. Reviewer/skeptic instructions prohibit
-edits; this is an instruction-level constraint, not a separate OS sandbox. For
-enforced consultation isolation, use Hybrid's restricted Codex consultation path.
+Agents are `sage-reviewer`, `sage-skeptic`, and `sage-bioinformatician`. They
+inherit the parent model. Their read-only constraints are instructions, not a
+separate OS security boundary. Use them for bounded work when it warrants the cost.
 
 ## MCP choices
 
-No new MCP server starts in the minimal installation. Add the capabilities you
-use with repeated `--mcp` flags. Existing servers remain configured; omitting a
-flag on a later install does not remove a server you already enabled.
+No new server starts in the minimal install. Each template omits tools from the
+initial direct-tool surface while leaving deferred discovery and Code Mode
+available. This is a loading choice, not an access-control boundary.
 
-| Integration | Enable | Purpose |
+| Flag | Capability | Dependencies |
 | --- | --- | --- |
-| Hybrid SAGE | `--with-hybrid ../hybrid-sage` | OpenCode workers, Codex/Antigravity consultation, handoffs and scoped lessons |
-| Context7 | `--mcp context7` | Library-specific documentation retrieval |
-| DeepWiki | `--mcp deepwiki` | Repository architecture research |
-| OpenAI Docs | `--mcp openai-docs` | Official OpenAI documentation search and retrieval |
+| `--mcp context7` | Library documentation | Network |
+| `--mcp deepwiki` | Public repository research | Network |
+| `--mcp openai-docs` | Official OpenAI documentation | Network |
+| `--mcp serena` | Symbol navigation and semantic edits | uvx; pinned serena-agent 2.1.0 |
+| `--mcp playwright` | Browser interaction when the client lacks it | Node/npx; pinned 0.0.85; browser installation |
+| `--mcp memory` | Optional independent knowledge graph | Node/npx; pinned 2.1.1 |
 
-Native reasoning replaces sequential-thinking MCP. Native web tools and connected
-plugins cover ordinary search/fetch. Project files/checkpoints and available native
-memory cover continuity without a second global memory service. Use existing
-Playwright tooling or browser plugins for UI work; add a browser MCP separately
-when that environment needs it. Serena can be useful for large semantic refactors,
-but is not a dependency of ordinary search and editing. REA stays an on-demand CLI
-option rather than a standing large tool catalog or an automatic package install.
+Serena starts without indexing a home directory. Activate the actual task
+repository with its `activate_project` tool before symbol operations.
+The browser template uses an isolated headless session; install its browser with
+the server's supported browser-install workflow if needed. It does not inherit
+the sibling harness's blanket browser sandbox bypass.
+Memory uses `$CODEX_HOME/sage/memory.json`, not the sibling OpenCode store. Prefix
+facts with project scope and verify retrieved facts before relying on them.
 
-## Check and restore
+Native reasoning/web tools replace sequential-thinking and fetch in Codex.
+Existing project browser tests remain useful alongside an optional browser MCP.
+REA remains an on-demand reverse-engineering option through
+`sage-binary-inspection`; a standing large server catalog is unnecessary.
+
+To register an optional Hybrid checkout, use `--with-hybrid ../hybrid-sage`.
+A previously disabled server remains disabled. Delegation requires a user request;
+its controls and worker policy live in that repository. Nothing here starts
+worker jobs during installation or validation.
+
+## Token overhead
+
+The global instructions keep orchestration detail out of ordinary tasks.
+A 6,000-token tool-history limit is added only when the user has not set one;
+use bounded retrieval and retain complete logs before a large result is truncated.
+Model and reasoning effort remain unchanged. Deferred tools and focused skills
+reduce unnecessary loading; they do not establish benchmark or billing savings.
+
+Inspect local recorded counters without exposing transcript contents:
 
 ```bash
+python3 scripts/token_audit.py --limit 20
+```
+
+Cached input is reported separately. Repeated cumulative notifications are
+deduplicated and counter resets handled. Reasoning is not added to output twice.
+Forked histories/incomplete logs can overlap or omit usage. These are recorded
+counters, not a subscription-quota formula or a cost invoice.
+See [source audit and optional additions](docs/source-audit.md).
+
+## Update, validate, and restore
+
+```bash
+git pull --ff-only
+bash scripts/activate.sh --disable-mcp hybrid-sage
 python3 scripts/harness.py check
 python3 -m unittest discover -s tests -v
 python3 scripts/smoke_native.py
 codex-sage-doctor --native
 ```
 
-The native smoke test uses temporary homes, checks actual skill/agent discovery and
-strict native config parsing, then restores its installation. It makes no model
-request. Tests cover preservation of user config, authentication, and unrelated
-skills; optional MCP; custom paths; interrupted restore; rollback after a failed
-write; and retirement of unchanged installer-owned entries.
+Updating source does not fetch arbitrary new skills. Review upstream changes
+against [sources.lock.json](sources.lock.json), update adaptations and package
+pins deliberately, run checks, then reinstall. A source pin records what was
+reviewed; it does not lock every optional package's transitive dependencies.
 
-Each installation prints its exact restore command. Snapshots live under
-`$CODEX_HOME/sage/backups` with private file permissions. Restore leaves subsequent
-user edits alone and reports conflicts; interrupted restores can be resumed.
-For an isolated install or preview:
+The native smoke test uses temporary homes, validates all templates, checks skill
+and agent discovery, and restores. It makes no model request and does not prove
+live service access or browser availability. Installation prints an exact restore
+command; private snapshots live under `$CODEX_HOME/sage/backups`. Restore preserves
+later edits by reporting conflicts before changing anything.
 
 ```bash
 bash scripts/activate.sh --dry-run
 bash scripts/activate.sh --codex-home /path/to/codex --skills-dir /path/to/skills --bin-dir /path/to/bin
-python3 scripts/harness.py restore /path/from/the/install/output.json
+python3 scripts/harness.py restore /path/printed/by/install.json
 ```
 
-A custom skills directory is useful for testing or repository-scoped discovery;
-Codex must actually scan that location. An existing `AGENTS.override.md` takes
-precedence over global `AGENTS.md` and is reported by diagnostics.
-
-See [design and source mapping](docs/design.md), [provenance](REGISTRY.md), and
-[behavioral evaluation cases](docs/evaluation.md). MIT licensed; see [LICENSE](LICENSE).
+Custom skills directories must be scanned by the chosen client. Diagnostics
+report an `AGENTS.override.md` that overrides global guidance.
+See [design](docs/design.md), [evaluation](docs/evaluation.md),
+[provenance](REGISTRY.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
+MIT licensed; see [LICENSE](LICENSE).

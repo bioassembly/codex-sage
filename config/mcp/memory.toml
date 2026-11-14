@@ -1,0 +1,9 @@
+# Opt in to an independent Codex store. The installer resolves the path below.
+[mcp_servers.memory]
+command = "npx"
+args = ["--yes", "@modelcontextprotocol/server-memory@2.1.1"]
+startup_timeout_sec = 60
+tool_timeout_sec = 60
+omit_tools_from = ["direct"]
+[mcp_servers.memory.env]
+MEMORY_FILE_PATH = "__CODEX_SAGE_MEMORY_PATH__"

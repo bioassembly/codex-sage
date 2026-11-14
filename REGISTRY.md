@@ -1,35 +1,54 @@
-# Skill provenance
+# Workflow provenance
 
-The `sage-*` skills are concise, independently written adaptations of workflows
-already configured in the owner's sibling harnesses. No external skill installer
-or vendored executable is run during installation. Public documentation links
-are retrieval entry points, not copied manuals or claims of executed validation.
+Reviewed 2026-11-14 against the clean sibling checkouts and upstream sources
+recorded in [sources.lock.json](sources.lock.json). Skills are concise Codex
+adaptations. External installers, upstream hooks, and vendored executables do not
+run during installation. Documentation links are retrieval entry points, not
+claims of executed validation.
 
-Reviewed 2026-11-08 against the local clean source checkouts before adaptation:
-
-- [antigravity-sage](https://github.com/bioassembly/antigravity-sage/tree/9cf97f110b91b246a15ac0d5b6fdd619f922080e)
-- [opencode-sage](https://github.com/bioassembly/opencode-sage/tree/ed79b38ee1d005cfabbcb8eecef13ce95eebbd6a)
-
-| Codex skill | Source workflow or inspiration |
+| Source workflow | Codex implementation |
 | --- | --- |
-| sage-checkpoint | Antigravity checkpoint; OpenCode structured task notes |
-| sage-debug | systematic-debugging; evidence-gated verification |
-| sage-design | codebase-design, domain-modeling, grill-me |
-| sage-spec | to-spec; scope-preserving local drafting |
-| sage-tickets | to-tickets; vertical slices and blocking edges |
-| sage-review | reviewer persona and review workflow |
-| sage-genomics | nextflow and bioinformatician; official Nextflow/nf-core documentation |
-| sage-sequence-analysis | biopython and pysam; official package documentation and hts-specs |
-| sage-scientific-report | statistical-data-visualization, first-principles-explainer, FAIR provenance |
-| sage-results-package | pipeline-sketch-results; separate client and reproducible research deliverables |
-| sage-binary-inspection | reverse-engineer-anything; task-relevant static inspection without automatic installs |
-| sage-overnight | overnight-explorer; bounded experiments, falsification, reproducible methods |
-| sage-security-audit | security-audit; concrete threat paths and evidence |
-| sage-webapp-testing | webapp-testing; existing browser infrastructure first |
-| sage-harness-eval | skill-evaluation and OpenCode evaluation loop |
+| OpenCode Ponytail plugin; DietrichGebert/ponytail core | `ponytail`; Codex skill adaptation with MIT notice |
+| grill-me; upstream productivity/grilling | `grill-me`; bounded interview using native question tools |
+| codebase-design | `sage-design` |
+| domain-modeling | `sage-domain-modeling` |
+| to-spec / to-tickets | `sage-spec` / `sage-tickets` |
+| agentic-coding | Short global conventions and scoped engineering skills |
+| systematic-debugging | `sage-debug` |
+| test-driven-development | `sage-test-design`; behavior coverage scaled to impact |
+| verification-before-completion | Global executed-evidence convention and each workflow |
+| using-git-worktrees | `sage-git-worktrees` |
+| git-commit-convention | `sage-git-commit`; infer existing house style |
+| github-repo-best-practices | `sage-repo-maintenance` |
+| mcp-builder | `sage-mcp-builder`; version-specific official SDK documentation |
+| security-audit | `sage-security-audit` |
+| webapp-testing | `sage-webapp-testing`; existing project test stack first |
+| web-scraping | `sage-web-scraping` |
+| nextflow | `sage-genomics`; official Nextflow/nf-core docs |
+| pysam / biopython | `sage-sequence-analysis`; official package docs and hts-specs |
+| statistical-data-visualization | `sage-scientific-report` |
+| pipeline-sketch-results | `sage-results-package` |
+| fair-data-principles | `sage-fair-data` |
+| first-principles-explainer | `sage-explain` and scientific report discrepancy analysis |
+| reverse-engineer-anything | `sage-binary-inspection`; task-relevant tools on demand |
+| overnight-explorer | `sage-overnight` |
+| pdf-inplace-editing | `sage-pdf-editing`; distinguishes visible edits from content removal |
+| checkpoint | `sage-checkpoint`; task-local continuity |
+| token-efficiency | `sage-token-efficiency` and local counter audit |
+| skill-evaluation | `sage-harness-eval` |
+| skill-maker / skill-acquisition | Native skill-creator / skill-installer; no duplicate wrappers |
+| doctor | `codex-sage-doctor`; native CLI diagnostics |
+| read-only / review / red-team | Native specialist agents and `sage-review`; no extra default loops |
+| model-router / SAGE controls | Optional Hybrid integration; removed from discovery when disabled |
 
-The source registries credit obra/superpowers, mattpocock/skills, K-Dense-AI,
-anthropics/skills, and self-authored procedures. This repository ships rewritten
-procedural guidance rather than their large manuals or code bundles. Codex's
-built-in skill creator/installer and OpenAI documentation skills remain authoritative
-for their native workflows; SAGE does not install duplicates of them.
+The sibling registries credit obra/superpowers, mattpocock/skills, K-Dense-AI,
+anthropics/skills, and locally authored procedures. Their large manuals, scripts,
+and persona hooks are not copied wholesale. New supporting prose is locally
+authored. Ponytail and grilling attribution/license is preserved in
+[third-party notices](THIRD_PARTY_NOTICES.md).
+
+MCP templates preserve documentation retrieval and add pinned optional Serena,
+Playwright, and independent memory configurations. Native reasoning and web
+retrieval cover the sibling sequential-thinking/fetch use cases. The REA skill
+covers on-demand binary inspection. This mapping preserves useful workflows
+without requiring every sibling server to be active in every Codex session.
