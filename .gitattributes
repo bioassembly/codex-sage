@@ -1,0 +1,6 @@
+# Preserve original vendor bytes, including Markdown hard breaks and CRLF.
+# Local SAGE source retains the repository's normal whitespace checks.
+skills/variant-analysis/** -text -whitespace
+skills/differential-review/** -text -whitespace
+skills/vercel-react-best-practices/** -text -whitespace
+third_party/licenses/** -text -whitespace

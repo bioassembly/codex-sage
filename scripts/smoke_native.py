@@ -31,7 +31,8 @@ def main():
                 raise RuntimeError(result.stderr)
             json.loads(result.stdout)
             assert "sage-genomics" in result.stdout, "Native skill discovery failed"
-            for name in ('ponytail', 'grill-me', 'sage-mcp-builder', 'sage-token-efficiency'):
+            for name in ('ponytail', 'grill-me', 'sage-mcp-builder', 'sage-token-efficiency',
+                         'variant-analysis', 'differential-review', 'vercel-react-best-practices'):
                 assert name in result.stdout, f"Native skill discovery failed: {name}"
             assert "sage-reviewer" in result.stdout, "Native custom agent discovery failed"
             print("Ordinary Codex discovered the installed skills and custom agents without a profile.")

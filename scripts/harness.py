@@ -117,6 +117,21 @@ def mcp_templates() -> dict:
     return {path.stem: read_toml(path) for path in sorted((REPO / 'config/mcp').glob('*.toml'))}
 
 
+def check_vendored() -> None:
+    manifest = json.loads((REPO / 'third_party/lock.json').read_text())
+    for spec in manifest['skills']:
+        root = REPO / 'skills' / spec['name']
+        actual = {str(p.relative_to(root)) for p in root.rglob('*')
+                  if p.is_file() and '__pycache__' not in p.parts}
+        if actual != set(spec['files']):
+            raise ValueError(f"Vendored file list differs from the pinned source: {spec['name']}")
+        for name, expected in spec['files'].items():
+            data = (root / name).read_bytes()
+            digest = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+            if digest != expected:
+                raise ValueError(f"Vendored upstream file was modified: {spec['name']}/{name}")
+
+
 def stage_config(current: str, settings: dict) -> str:
     """Use Codex's native TOML writer in isolation, before changing live files."""
     binary = shutil.which("codex")
@@ -182,6 +197,7 @@ def stage_config(current: str, settings: dict) -> str:
 
 
 def check() -> None:
+    check_vendored()
     for path in sorted(REPO.rglob("*.toml")):
         read_toml(path)
     sources = json.loads((REPO / 'sources.lock.json').read_text())

@@ -1,10 +1,12 @@
 # Workflow provenance
 
-Reviewed 2026-11-14 against the clean sibling checkouts and upstream sources
-recorded in [sources.lock.json](sources.lock.json). Skills are concise Codex
-adaptations. External installers, upstream hooks, and vendored executables do not
-run during installation. Documentation links are retrieval entry points, not
-claims of executed validation.
+Reviewed 2026-11-14 against the sibling and upstream sources recorded in
+[sources.lock.json](sources.lock.json) and [third_party/lock.json](third_party/lock.json).
+SAGE skills are concise Codex adaptations. The three explicitly approved external
+skill packages are unmodified upstream copies with per-file integrity checks.
+The standard harness install does not run third-party executables. The separate
+RTK installer downloads a checksum-pinned binary and stages its native setup.
+Documentation links are retrieval entry points, not claims of executed validation.
 
 | Source workflow | Codex implementation |
 | --- | --- |
@@ -40,6 +42,10 @@ claims of executed validation.
 | doctor | `codex-sage-doctor`; native CLI diagnostics |
 | read-only / review / red-team | Native specialist agents and `sage-review`; no extra default loops |
 | model-router / SAGE controls | Optional Hybrid integration; removed from discovery when disabled |
+| Trail of Bits known-bug hunting | Original `variant-analysis` directory and references |
+| Trail of Bits security diff analysis | Original `differential-review` directory and references |
+| Vercel React/Next.js guidance | Original `vercel-react-best-practices` package |
+| RTK command compression | OSS 1.2.0 binary and upstream Codex hook/awareness; separate reversible installer |
 
 The sibling registries credit obra/superpowers, mattpocock/skills, K-Dense-AI,
 anthropics/skills, and locally authored procedures. Their large manuals, scripts,

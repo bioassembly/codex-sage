@@ -5,6 +5,25 @@ Reviewed 2026-11-14. Source revisions are recorded in
 [REGISTRY.md](../REGISTRY.md). The sibling repositories remain unchanged.
 This is a source/configuration audit, not a model-performance benchmark.
 
+## Ponytail and grill-me adaptation limits
+
+The original choice to shorten these two skills aimed to reduce duplicated process
+instructions and fit the user's preference for autonomous completion. It was not
+an intelligence upgrade and was not validated by an A/B comparison.
+
+- Ponytail retains the smallest-complete-change approach, but its session-mode,
+  testing, and closing-report rules were shortened or generalized.
+- Grill-me changes the stopping rule from exhausting the decision tree to resolving
+  uncertainty that affects the plan. It also replaces a mandatory final gate with
+  the user's existing authorization. These are behavioral changes, not just a
+  translation of host-specific tool names.
+
+Skill bodies load when invoked, so shortening these small entrypoints saves little
+startup context compared with controlling large tool outputs and tool catalogs.
+The adaptations could lose useful discipline. Neither equivalent quality nor a
+smarter model is established. They remain clearly labeled adaptations; the three
+newly approved external skill packages below retain their original contents.
+
 ## Token overhead and changes
 
 - **Repeated large results:** full listings, page dumps, and duplicate text plus
@@ -68,10 +87,15 @@ Package metadata was checked against [PyPI Serena](https://pypi.org/project/sere
 [MCP memory](https://www.npmjs.com/package/@modelcontextprotocol/server-memory).
 Ponytail and grilling sources and their notices are pinned in the source manifest.
 
-## Optional additions for the user to choose
+## Additions approved after the audit
 
-These were researched but are **not installed**. They add distinct task-specific
-value; none guarantees lower total tokens or greater intelligence.
+The user approved these additions after the initial audit. The two Trail of Bits
+skills and Vercel skill are now installed as unmodified upstream directories,
+with all 101 upstream files verified against pinned Git blob hashes. RTK OSS
+1.2.0 is installed through a separate checksum-pinned, reversible installer.
+Codex requires review/trust of its new hook before automatic command rewriting.
+No hook trust is bypassed. None of these installations establishes lower total
+tokens or greater intelligence without a task-level comparison.
 
 | Candidate | Potential value | Suggested trial |
 | --- | --- | --- |
@@ -82,7 +106,7 @@ value; none guarantees lower total tokens or greater intelligence.
 
 RTK's [Codex integration notes](https://github.com/rtk-ai/rtk/blob/develop/hooks/codex/README.md)
 explain that command rewriting interacts with native approval classification.
-Review this behavior before enabling a global hook; the hook was not added here.
+Review this behavior when trusting the installed hook through Codex's `/hooks` UI.
 
 Prefer one candidate at a time on a fixed model/effort and a small set of real
 tasks. Compare correctness, evidence quality, uncached input, output/reasoning,

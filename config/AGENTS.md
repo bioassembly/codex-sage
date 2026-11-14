@@ -19,6 +19,10 @@ cross-harness probing. Native subagents are useful for bounded independent work
 when their value warrants the extra context; inspect their evidence and artifacts.
 A persona or skill never grants additional permissions.
 
+Third-party skills may name tools or agents from another client. Use equivalent
+available native tools. If a named agent is unavailable, follow its supplied
+methodology directly rather than inventing a tool or starting another harness.
+
 For work spanning compaction or sessions, keep a short task checkpoint with the
 goal, decisions, checks, failures, and next step. On resumption, read it and verify
 the working tree. Put durable conventions in project docs; keep credentials and

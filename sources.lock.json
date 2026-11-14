@@ -1,28 +1,68 @@
 {
   "reviewed": "2026-11-14",
-  "note": "Reviewed source revisions, not automatically installed upstream packages. Skills are maintained Codex adaptations.",
+  "note": "Reviewed source revisions. SAGE adaptations coexist with byte-identical upstream packages pinned in third_party/lock.json.",
   "sources": [
     {
       "repository": "bioassembly/antigravity-sage",
       "revision": "64e7da7e271b649a4eea5218837441d48ad94e7d",
-      "paths": ["skills", "config/mcp_config.json", "REGISTRY.md"]
+      "paths": [
+        "skills",
+        "config/mcp_config.json",
+        "REGISTRY.md"
+      ]
     },
     {
       "repository": "bioassembly/opencode-sage",
       "revision": "3c0f70ffc72e194ca5c02045f1f880bc31d68e9c",
-      "paths": ["reference/skills", "reference/opencode.template.json", "docs/components/mcp.md"]
+      "paths": [
+        "reference/skills",
+        "reference/opencode.template.json",
+        "docs/components/mcp.md"
+      ]
     },
     {
       "repository": "DietrichGebert/ponytail",
       "revision": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
-      "paths": ["skills/ponytail/SKILL.md", "LICENSE"],
+      "paths": [
+        "skills/ponytail/SKILL.md",
+        "LICENSE"
+      ],
       "license": "MIT"
     },
     {
       "repository": "mattpocock/skills",
       "revision": "5863806dd4e15c63174bee4e7515a4256792ecfa",
-      "paths": ["skills/productivity/grill-me/SKILL.md", "skills/productivity/grilling/SKILL.md", "LICENSE"],
+      "paths": [
+        "skills/productivity/grill-me/SKILL.md",
+        "skills/productivity/grilling/SKILL.md",
+        "LICENSE"
+      ],
       "license": "MIT"
+    },
+    {
+      "repository": "trailofbits/skills",
+      "revision": "149d7b21f4067765b82e67029730b42d228ef4b4",
+      "paths": [
+        "plugins/variant-analysis/skills/variant-analysis",
+        "plugins/differential-review/skills/differential-review",
+        "LICENSE"
+      ]
+    },
+    {
+      "repository": "vercel-labs/agent-skills",
+      "revision": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "paths": [
+        "skills/react-best-practices"
+      ]
+    },
+    {
+      "repository": "rtk-ai/rtk",
+      "revision": "e288a18c04452fd26192f59132e5324a8bb6924d",
+      "paths": [
+        "README.md",
+        "hooks/codex/README.md",
+        "LICENSE"
+      ]
     }
   ],
   "mcp_packages": {
