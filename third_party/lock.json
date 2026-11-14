@@ -1,5 +1,5 @@
 {
-  "reviewed": "2026-11-14",
+  "reviewed": "2026-11-15",
   "skills": [
     {
       "repository": "trailofbits/skills",
@@ -127,6 +127,43 @@
         "rules/server-parallel-fetching.md": "1affc835a601a894fd02de08e6c9cdfd76d34b64",
         "rules/server-parallel-nested-fetching.md": "be1dc25075e40e6bda46cb24dc5a6f42b916b0e8",
         "rules/server-serialization.md": "39c5c4164c31be7f171ea2f4b3b32fe47709a651"
+      },
+      "aliases": {
+        "async-cheap-condition-before-await.md": "rules/async-cheap-condition-before-await.md",
+        "async-defer-await.md": "rules/async-defer-await.md",
+        "server-hoist-static-io.md": "rules/server-hoist-static-io.md"
+      }
+    },
+    {
+      "repository": "DietrichGebert/ponytail",
+      "revision": "96608e078b2d5ea607c5c3b8b5a54d1c1fba6846",
+      "path": "skills/ponytail",
+      "name": "ponytail",
+      "license": "MIT",
+      "files": {
+        "SKILL.md": "d64edd32265ba21cbf5270158f04e97d96925f27"
+      }
+    },
+    {
+      "repository": "mattpocock/skills",
+      "revision": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "path": "skills/productivity/grill-me",
+      "name": "grill-me",
+      "license": "MIT",
+      "files": {
+        "SKILL.md": "3947ff9c4ad980d14fc07fccbf659d47c114e81d",
+        "agents/openai.yaml": "4d6fb0c746c5d21364dce5d0cf8c51eab9712e7b"
+      }
+    },
+    {
+      "repository": "mattpocock/skills",
+      "revision": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "path": "skills/productivity/grilling",
+      "name": "grilling",
+      "license": "MIT",
+      "files": {
+        "SKILL.md": "d2f09a18e6a6c65c55f1271ba08dfeaf06f0bed3",
+        "agents/openai.yaml": "ddbdb96139c0c1dfe6bca698f39d0465674b8a39"
       }
     }
   ],
@@ -153,6 +190,12 @@
         "sha256": "1959bd6d89a729ccdee176b7141490bbe750820f032c74f29a752576f2495254"
       }
     },
-    "revision": "e288a18c04452fd26192f59132e5324a8bb6924d"
+    "revision": "e288a18c04452fd26192f59132e5324a8bb6924d",
+    "integrations": {
+      "opencode": {
+        "path": "runtime/rtk/opencode/rtk.ts",
+        "sha256": "989e9231b0a28b538a88caf7c6d11327ebe07cbee6d41c84947fbb01d4898aa4"
+      }
+    }
   }
 }

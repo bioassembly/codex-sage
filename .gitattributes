@@ -1,6 +1,11 @@
-# Preserve original vendor bytes, including Markdown hard breaks and CRLF.
-# Local SAGE source retains the repository's normal whitespace checks.
+# Preserve pinned upstream bytes, including Markdown hard breaks.
 skills/variant-analysis/** -text -whitespace
 skills/differential-review/** -text -whitespace
 skills/vercel-react-best-practices/** -text -whitespace
+skills/ponytail/** -text -whitespace
+skills/grill-me/** -text -whitespace
+skills/grilling/** -text -whitespace
 third_party/licenses/** -text -whitespace
+runtime/rtk/** -text -whitespace
+# Unified patches require a space prefix on blank context lines.
+patches/*.patch -whitespace

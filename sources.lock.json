@@ -1,6 +1,6 @@
 {
-  "reviewed": "2026-11-14",
-  "note": "Reviewed source revisions. SAGE adaptations coexist with byte-identical upstream packages pinned in third_party/lock.json.",
+  "reviewed": "2026-11-15",
+  "note": "Reviewed pinned sources. Original Ponytail/grill-me/grilling coexist with locally maintained SAGE workflows; per-client manifests record upstream files, explicit patches and compatibility aliases.",
   "sources": [
     {
       "repository": "bioassembly/antigravity-sage",
@@ -62,6 +62,33 @@
         "README.md",
         "hooks/codex/README.md",
         "LICENSE"
+      ]
+    },
+    {
+      "repository": "obra/superpowers",
+      "revision": "22f0b463e7a5e579904dd6211a520321035526f7",
+      "paths": [
+        "skills/systematic-debugging",
+        "skills/test-driven-development",
+        "skills/using-git-worktrees",
+        "skills/verification-before-completion"
+      ]
+    },
+    {
+      "repository": "anthropics/skills",
+      "revision": "1780c5e5a552fd4d1c9d6a7b0cab26b0c2bef064",
+      "paths": [
+        "skills/mcp-builder",
+        "skills/webapp-testing"
+      ]
+    },
+    {
+      "repository": "K-Dense-AI/scientific-agent-skills",
+      "revision": "2d2065fb4520fa3f3f2bcf61cff26ec8b7eba4b5",
+      "paths": [
+        "skills/biopython",
+        "skills/pysam",
+        "skills/nextflow"
       ]
     }
   ],

@@ -22,6 +22,11 @@ A persona or skill never grants additional permissions.
 Third-party skills may name tools or agents from another client. Use equivalent
 available native tools. If a named agent is unavailable, follow its supplied
 methodology directly rather than inventing a tool or starting another harness.
+When an upstream skill calls `Skill` with another skill name, use the native skill
+loader or read that installed skill's `SKILL.md` and follow its full instructions.
+For Matt Pocock workflows, locate project configuration in either `CLAUDE.md` or
+`AGENTS.md`. Before an authorized tracker publication, ensure required labels
+such as `ready-for-agent` exist; installing skills alone does not create them.
 
 For work spanning compaction or sessions, keep a short task checkpoint with the
 goal, decisions, checks, failures, and next step. On resumption, read it and verify

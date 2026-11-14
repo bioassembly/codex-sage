@@ -1,12 +1,13 @@
 # Third-party notices
 
-`skills/ponytail` is a shortened Codex adaptation of DietrichGebert/ponytail.
-`skills/grill-me` adapts the interview workflow in mattpocock/skills and the
-owner's sibling harnesses. These are modified adaptations, not unmodified
-upstream releases or their complete plugins. Revisions are in `sources.lock.json`.
+`skills/ponytail`, `skills/grill-me`, and `skills/grilling` are original pinned
+upstream packages from DietrichGebert/ponytail and mattpocock/skills. Their complete
+files and original invocation policies are preserved. Native loader mapping lives
+outside the packages. Reviewed revisions and original hashes are tracked in the
+source manifests.
 
 Both upstream works use the following MIT license. The notices apply to their
-respective adapted material:
+respective upstream material:
 
 Copyright (c) 2026 DietrichGebert
 
@@ -56,3 +57,19 @@ version, edition, asset URLs, and checksums are tracked in `third_party/lock.jso
 The upstream project identifies its OSS hook/filter edition as Apache-2.0.
 Its license is preserved in [third_party/licenses/rtk-oss.txt](third_party/licenses/rtk-oss.txt).
 No RTK binary or pipeline engine is vendored in this repository.
+
+## Additional sibling skill sources
+
+Sibling recipes also vendor reviewed Matt Pocock engineering/setup packages,
+Obra Superpowers workflows, Anthropic MCP/browser skills, and K-Dense scientific
+skills. Individual manifests identify which packages each client ships.
+Superpowers' MIT license is retained in `third_party/licenses/superpowers.txt`.
+Anthropic's per-package LICENSE.txt files are preserved with those packages.
+K-Dense's repository MIT license is retained in
+`third_party/licenses/scientific-agent-skills.md`; original package metadata also
+identifies the respective library licenses.
+
+One Anthropic MCP evaluation helper has an explicit correctness patch to process
+all tool requests in a response. The original source hash, patched hash, and
+patch file are recorded. Three Vercel compiled-guide aliases are also declared.
+Ponytail and both grilling packages have no content patches.

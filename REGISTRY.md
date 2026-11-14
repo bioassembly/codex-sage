@@ -2,16 +2,16 @@
 
 Reviewed 2026-11-14 against the sibling and upstream sources recorded in
 [sources.lock.json](sources.lock.json) and [third_party/lock.json](third_party/lock.json).
-SAGE skills are concise Codex adaptations. The three explicitly approved external
-skill packages are unmodified upstream copies with per-file integrity checks.
+SAGE skills are concise Codex adaptations. Ponytail, grill-me/grilling, and approved external packages retain upstream files
+with per-file integrity checks. Compatibility aliases are declared separately.
 The standard harness install does not run third-party executables. The separate
 RTK installer downloads a checksum-pinned binary and stages its native setup.
 Documentation links are retrieval entry points, not claims of executed validation.
 
 | Source workflow | Codex implementation |
 | --- | --- |
-| OpenCode Ponytail plugin; DietrichGebert/ponytail core | `ponytail`; Codex skill adaptation with MIT notice |
-| grill-me; upstream productivity/grilling | `grill-me`; bounded interview using native question tools |
+| OpenCode Ponytail plugin; DietrichGebert/ponytail core | Original `ponytail` skill and MIT notice |
+| grill-me; upstream productivity/grilling | Original `grill-me` wrapper plus full `grilling`; native loader mapping outside originals |
 | codebase-design | `sage-design` |
 | domain-modeling | `sage-domain-modeling` |
 | to-spec / to-tickets | `sage-spec` / `sage-tickets` |

@@ -9,7 +9,9 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shlex
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -140,8 +142,75 @@ def install(binary_data: bytes, codex_home: Path, bin_dir: Path, version: str) -
     return backup
 
 
+def install_native(binary_data, config_home, bin_dir, version, client):
+    """Install the upstream plugin format for the selected sibling client."""
+    config_home, bin_dir = config_home.resolve(), bin_dir.resolve()
+    if client == 'opencode' and shutil.which('opencode'):
+        banner = subprocess.run(['opencode', '--version'], capture_output=True, text=True, timeout=15).stdout
+        match = re.search(r'(\d+)\.(\d+)\.(\d+)', banner)
+        if match and tuple(map(int, match.groups())) < (1, 18, 29):
+            raise ValueError('RTK native plugin requires OpenCode 1.18.29 or newer')
+    binary = bin_dir / 'rtk'
+    marker = config_home / 'sage/rtk-install.json'
+    recorded = json.loads(marker.read_text()) if marker.exists() else {}
+    if binary.exists() and binary.read_bytes() != binary_data:
+        if recorded.get('binary_fingerprint') != harness.fingerprint(harness.snapshot(binary)):
+            raise ValueError('Unowned or modified rtk binary preserved')
+    plans = {binary: bytes_state(binary_data)}
+    with tempfile.TemporaryDirectory(prefix='sage-rtk-native-') as temp:
+        root = Path(temp)
+        executable = root / 'rtk'
+        executable.write_bytes(binary_data)
+        executable.chmod(0o755)
+        env = {**os.environ, 'XDG_CONFIG_HOME': str(root / 'config'), 'XDG_DATA_HOME': str(root / 'data'),
+               'XDG_STATE_HOME': str(root / 'state')}
+        output = subprocess.check_output([str(executable), '--version'], env=env, text=True, timeout=15).strip()
+        if output != f'rtk {version}':
+            raise ValueError('RTK version differs from source manifest')
+        if client == 'antigravity':
+            subprocess.run([str(executable), 'init', '--agent', 'antigravity'], env=env, cwd=root,
+                           input='', capture_output=True, text=True, check=True, timeout=30)
+            generated = root / '.agents/plugins/rtk'
+            for source in generated.rglob('*'):
+                if source.is_file():
+                    plans[config_home / 'plugins/rtk' / source.relative_to(generated)] = harness.snapshot(source)
+            if not (generated / 'plugin.json').is_file() or not (generated / 'hooks.json').is_file():
+                raise ValueError('Upstream Antigravity plugin generation failed')
+        else:
+            source = harness.REPO / 'runtime/rtk/opencode/rtk.ts'
+            info = json.loads((harness.REPO / 'third_party/lock.json').read_text())['rtk']['integrations']['opencode']
+            if hashlib.sha256(source.read_bytes()).hexdigest() != info['sha256']:
+                raise ValueError('Pinned OpenCode RTK plugin was modified')
+            plans[config_home / 'plugins/rtk.ts'] = harness.snapshot(source)
+    for path, state in plans.items():
+        if path != binary and path.exists() and harness.snapshot(path) != state:
+            if recorded.get('files', {}).get(str(path)) != harness.fingerprint(harness.snapshot(path)):
+                raise ValueError(f'Personal RTK plugin modification preserved: {path}')
+    plans[marker] = harness.file_state(json.dumps({'version': version, 'client': client,
+        'binary_fingerprint': harness.fingerprint(plans[binary]),
+        'files': {str(p): harness.fingerprint(v) for p, v in plans.items() if p != binary}}, indent=2) + '\n')
+    entries = [{'path': str(p), 'before': harness.snapshot(p), 'after': v} for p, v in plans.items()]
+    backup = config_home / 'sage/backups' / f'rtk-{uuid.uuid4().hex}.json'
+    backup.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    harness.apply_state(backup, harness.file_state(json.dumps({'entries': entries}, indent=2) + '\n'))
+    applied = []
+    try:
+        for entry in entries:
+            harness.apply_state(Path(entry['path']), entry['after'])
+            applied.append(entry)
+    except Exception:
+        for entry in reversed(applied):
+            harness.apply_state(Path(entry['path']), entry['before'])
+        raise
+    print(f'Installed upstream RTK {version} {client} plugin. Client model/configuration unchanged.')
+    print(f'Restore: python3 {shlex.quote(str(harness.REPO / "scripts/harness.py"))} restore {shlex.quote(str(backup))}')
+    return backup
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--client', choices=['codex', 'antigravity', 'opencode'], default='codex')
+    parser.add_argument('--config-home', type=Path)
     parser.add_argument('--codex-home', type=Path, default=Path(os.environ.get('CODEX_HOME', str(Path.home() / '.codex'))))
     parser.add_argument('--bin-dir', type=Path, default=Path.home() / '.local/bin')
     args = parser.parse_args()
@@ -152,7 +221,11 @@ def main() -> None:
     if len(archive) > 20 * 1024 * 1024:
         raise ValueError('RTK archive exceeded the expected size limit')
     binary_data = verify_archive(archive, asset['sha256'])
-    install(binary_data, args.codex_home, args.bin_dir, lock['version'])
+    if args.client == 'codex':
+        install(binary_data, args.config_home or args.codex_home, args.bin_dir, lock['version'])
+    else:
+        config_home = args.config_home or Path.home() / ('.config/opencode' if args.client == 'opencode' else '.gemini/config')
+        install_native(binary_data, config_home, args.bin_dir, lock['version'], args.client)
 
 
 if __name__ == '__main__':

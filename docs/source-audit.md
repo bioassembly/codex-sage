@@ -5,24 +5,14 @@ Reviewed 2026-11-14. Source revisions are recorded in
 [REGISTRY.md](../REGISTRY.md). The sibling repositories remain unchanged.
 This is a source/configuration audit, not a model-performance benchmark.
 
-## Ponytail and grill-me adaptation limits
+## Original Ponytail and grilling packages
 
-The original choice to shorten these two skills aimed to reduce duplicated process
-instructions and fit the user's preference for autonomous completion. It was not
-an intelligence upgrade and was not validated by an A/B comparison.
-
-- Ponytail retains the smallest-complete-change approach, but its session-mode,
-  testing, and closing-report rules were shortened or generalized.
-- Grill-me changes the stopping rule from exhausting the decision tree to resolving
-  uncertainty that affects the plan. It also replaces a mandatory final gate with
-  the user's existing authorization. These are behavioral changes, not just a
-  translation of host-specific tool names.
-
-Skill bodies load when invoked, so shortening these small entrypoints saves little
-startup context compared with controlling large tool outputs and tool catalogs.
-The adaptations could lose useful discipline. Neither equivalent quality nor a
-smarter model is established. They remain clearly labeled adaptations; the three
-newly approved external skill packages below retain their original contents.
+At the user's request, the earlier shortened adaptations were replaced by the
+original Ponytail and grill-me packages and the complete grilling dependency.
+Original files, modes, interview stopping rules, and invocation metadata are
+verified against upstream hashes. Host-specific skill loading is mapped outside
+those files. No intelligence or performance improvement is inferred from either
+shortening or restoring them; no task-level A/B benchmark was run.
 
 ## Token overhead and changes
 
@@ -66,8 +56,8 @@ See [OpenAI's guidance on concise skills and global instructions](https://develo
 
 | Finding | Codex adaptation / follow-up |
 | --- | --- |
-| Ponytail is an OpenCode plugin entry, not an installed Codex skill | Added a concise Codex core skill, retaining attribution and scope/validation requirements. No OpenCode hooks run in Codex. |
-| Upstream grill-me now wraps `grilling` under `skills/productivity/` | Added a self-contained Codex interview skill. The sibling's older self-contained version is not broken merely because the upstream layout changed. Directly copying the new wrapper would refer to a foreign `Skill` tool. |
+| Ponytail is an OpenCode plugin entry, not an installed Codex skill | Installed the original skill package and attribution. The duplicate unpinned OpenCode injector is retired in favor of that native skill. |
+| Upstream grill-me now wraps `grilling` under `skills/productivity/` | Installed the original wrapper and full grilling dependency; native loader mapping handles the upstream Skill call without rewriting either package. |
 | Sibling token-efficiency favors Serena first and makes broad retrieval claims | Codex chooses rg or semantic navigation to fit the task, reads callers/control flow, and measures before claiming savings. |
 | Sibling small-model guidance includes sequential-thinking and fixed context budgets | These do not transfer directly to a frontier Codex configuration. Native reasoning/web tools cover ordinary reasoning/fetch; no extra server is enabled for those. |
 | Serena launch is unpinned in the sibling configurations | Added pinned `serena-agent==2.1.0`, validated `codex` context/CLI options, no automatic home-directory indexing. Its optional REPL interface remains an evaluation candidate. |

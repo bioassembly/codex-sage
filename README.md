@@ -1,6 +1,6 @@
 # Codex SAGE
 
-A reproducible Codex harness with 31 skills, three specialist agents,
+A reproducible Codex harness with 32 skills, three specialist agents,
 optional MCP integrations, and reversible installation. Work executes in Codex
 by default. Hybrid SAGE is optional and never enabled by the standard install.
 
@@ -41,7 +41,7 @@ installer-owned Hybrid skill links retire when Hybrid is disabled.
 
 | Workflow | Skills |
 | --- | --- |
-| Scope and decisions | `ponytail`, `grill-me`, `sage-design`, `sage-domain-modeling`, `sage-spec`, `sage-tickets` |
+| Scope and decisions | `ponytail`, `grill-me`, `grilling`, `sage-design`, `sage-domain-modeling`, `sage-spec`, `sage-tickets` |
 | Engineering | `sage-debug`, `sage-test-design`, `sage-review`, `sage-mcp-builder`, `sage-repo-maintenance` |
 | Git | `sage-git-worktrees`, `sage-git-commit` |
 | Scientific work | `sage-genomics`, `sage-sequence-analysis`, `sage-scientific-report`, `sage-results-package`, `sage-fair-data` |
@@ -52,12 +52,14 @@ installer-owned Hybrid skill links retire when Hybrid is disabled.
 Invoke a skill with `$ponytail`, `$grill-me`, or another name, or let Codex match
 its description. Skill bodies load when selected; the discovery catalog contains
 names, descriptions, and paths. Adding skills still has a metadata cost.
-Ponytail and grill-me are concise Codex adaptations with attribution, not their
-complete upstream plugins. Grill-me applies to requested interviews; it does not
-add confirmation gates to routine work. See [workflow mapping](REGISTRY.md).
+Ponytail, grill-me, and the full grilling dependency are original pinned upstream
+packages. The host loader maps the upstream `Skill` call to native skill loading
+outside those files. Original interview modes, stopping rules, and explicit-only
+invocation policy remain intact. See [workflow mapping](REGISTRY.md).
 
-The three upstream packages above are complete, unmodified skill directories,
-including their supporting references and assets. Their file hashes and source
+The upstream packages retain their original files and supporting resources.
+Three explicitly recorded Vercel reference aliases repair compiled guide links;
+these add files without rewriting upstream text. Their file hashes and source
 revisions are in [third_party/lock.json](third_party/lock.json), checked by the
 harness validator. Trail of Bits content uses CC-BY-SA-4.0; Vercel's skill declares
 MIT in its upstream metadata. See [third-party notices](THIRD_PARTY_NOTICES.md).
@@ -182,3 +184,10 @@ See [design](docs/design.md), [evaluation](docs/evaluation.md),
 [provenance](REGISTRY.md), and [third-party notices](THIRD_PARTY_NOTICES.md).
 SAGE code is MIT licensed; third-party material retains its own license. See
 [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## Shared sibling harnesses
+
+The shared integration is documented in [docs/shared-sync.md](docs/shared-sync.md).
+Antigravity and OpenCode retain native configuration formats and existing skill
+names. They receive matching upstream pins, native RTK plugins, reversible update
+journals, disabled-Hybrid handling, and shared context/scientific guidance.

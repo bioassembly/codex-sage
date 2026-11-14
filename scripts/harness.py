@@ -123,13 +123,16 @@ def check_vendored() -> None:
         root = REPO / 'skills' / spec['name']
         actual = {str(p.relative_to(root)) for p in root.rglob('*')
                   if p.is_file() and '__pycache__' not in p.parts}
-        if actual != set(spec['files']):
+        if actual != set(spec['files']) | set(spec.get('aliases', {})):
             raise ValueError(f"Vendored file list differs from the pinned source: {spec['name']}")
         for name, expected in spec['files'].items():
             data = (root / name).read_bytes()
             digest = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
-            if digest != expected:
+            if digest != spec.get('patches', {}).get(name, expected):
                 raise ValueError(f"Vendored upstream file was modified: {spec['name']}/{name}")
+        for alias, target in spec.get('aliases', {}).items():
+            if (root / alias).read_bytes() != (root / target).read_bytes():
+                raise ValueError(f"Vendored compatibility alias differs: {spec['name']}/{alias}")
 
 
 def stage_config(current: str, settings: dict) -> str:
