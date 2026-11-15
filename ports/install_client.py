@@ -12,7 +12,8 @@ import client_state as harness
 import merge_config
 
 
-def install(repo, user_home, client, key=None, base_url=None, with_rea=False, disable_hybrid=False, dry_run=False):
+def install(repo, user_home, client, key=None, base_url=None, with_rea=False, disable_hybrid=True, dry_run=False,
+            all_skills=False):
     repo, user_home = repo.resolve(), user_home.resolve()
     source = repo / ('reference' if client == 'opencode' else 'config')
     target = user_home / ('.config/opencode' if client == 'opencode' else '.gemini/config')
@@ -68,22 +69,43 @@ def install(repo, user_home, client, key=None, base_url=None, with_rea=False, di
             raise ValueError(f'Personal path collision preserved: {destination}')
 
     skill_source = repo / ('reference/skills' if client == 'opencode' else 'skills')
-    selected = {skill.name: (skill, False) for skill in skill_source.iterdir() if (skill / 'SKILL.md').is_file()}
-    local = repo / ('reference/skills.local' if client == 'opencode' else 'skills.local')
-    if local.exists():
-        for skill in local.iterdir():
+    routing_file = source / 'skill-routing.json'
+    routing = json.loads(routing_file.read_text()) if (routing_file.exists() and not all_skills) else None
+    core_names = set(routing.get('core', [])) if routing else set()
+    catalog_names = {rule['skill'] for rule in routing.get('rules', []) if 'skill' in rule} if routing else set()
+    public = {skill.name: skill for skill in skill_source.iterdir() if (skill / 'SKILL.md').is_file()}
+    local_dir = repo / ('reference/skills.local' if client == 'opencode' else 'skills.local')
+    local = {}
+    if local_dir.exists():
+        for skill in local_dir.iterdir():
             if (skill / 'SKILL.md').is_file():
-                selected[skill.name] = (skill.resolve(), True)
-    for name, (skill, local_override) in sorted(selected.items()):
-        add_tree(skill, target / 'skills' / name, override=local_override)
+                local[skill.name] = skill.resolve()
+    for name, skill in sorted(public.items()):
+        if name in local:
+            continue
+        if routing is None or name in core_names or name not in catalog_names:
+            add_tree(skill, target / 'skills' / name)
+        else:
+            add_tree(skill, target / 'skills-catalog' / name)
+    for name, skill in sorted(local.items()):
+        add_tree(skill, target / 'skills' / name, override=True)
+    if routing is not None:
+        plans[target / 'skills-catalog/routing.json'] = harness.file_state(
+            json.dumps(routing, indent=2) + '\n', mode=0o644)
     if client == 'opencode':
         for group, name in (('agents', 'agent'), ('commands', 'command')):
             for src in (source / group).glob('*.md'):
                 plans[target / name / src.name] = harness.snapshot(src)
+        router_plugin = repo / 'plugins/sage-skill-router.ts'
+        if router_plugin.is_file():
+            plans[target / 'plugins/sage-skill-router.ts'] = harness.snapshot(router_plugin)
     else:
         for agent in (repo / 'agents').iterdir():
             if agent.is_dir():
                 add_tree(agent, target / 'agents' / agent.name)
+        router_dir = repo / 'plugins/sage-skill-router'
+        if router_dir.is_dir():
+            add_tree(router_dir, target / 'plugins/sage-skill-router')
         settings_path = user_home / '.gemini/antigravity-cli/settings.json'
         personal = json.loads(settings_path.read_text()) if settings_path.exists() else {}
         plans[settings_path] = harness.file_state(json.dumps(merge_config.defaults(
@@ -108,9 +130,16 @@ def install(repo, user_home, client, key=None, base_url=None, with_rea=False, di
                     if path.exists() or path.is_symlink():
                         plans[path] = {'kind': 'absent'}
         else:
-            path = target / 'plugins/hybrid-sage/plugin.json'
-            if path.exists() or path.is_symlink():
-                plans[path] = {'kind': 'absent'}
+            symlink = target / 'plugins/hybrid-sage'
+            if symlink.is_symlink() and 'hybrid-sage' in str(symlink.resolve()):
+                plans[symlink] = {'kind': 'absent'}
+            else:
+                path = symlink / 'plugin.json'
+                if path.exists() or path.is_symlink():
+                    plans[path] = {'kind': 'absent'}
+            legacy_link = user_home / '.gemini/antigravity-cli/plugins/hybrid-sage'
+            if legacy_link.is_symlink() and 'hybrid-sage' in str(legacy_link.resolve()):
+                plans[legacy_link] = {'kind': 'absent'}
     if harness.snapshot(config) != before_config:
         raise ValueError('Client config changed while staging; no files were installed')
     entries = [{'path': str(path), 'before': harness.snapshot(path), 'after': value} for path, value in plans.items()]
@@ -132,6 +161,16 @@ def install(repo, user_home, client, key=None, base_url=None, with_rea=False, di
         for entry in reversed(applied):
             harness.apply_state(Path(entry['path']), entry['before'])
         raise
+    prune_roots = {target / 'skills', target / 'skills-catalog', target / 'plugins'}
+    for entry in applied:
+        if entry['after'].get('kind') == 'absent':
+            parent = Path(entry['path']).parent
+            while parent not in prune_roots and any(parent.is_relative_to(root) for root in prune_roots):
+                if parent.is_dir() and not parent.is_symlink() and not any(parent.iterdir()):
+                    parent.rmdir()
+                    parent = parent.parent
+                else:
+                    break
     print(f'Config JSON valid. Installed {client} skills and native configuration; restart the client.')
     print(f'Restore: python3 {shlex.quote(str(repo / "scripts/harness.py"))} restore {shlex.quote(str(backup))}')
     return backup
@@ -144,12 +183,15 @@ def main():
     parser.add_argument('--key')
     parser.add_argument('--base-url')
     parser.add_argument('--with-rea', action='store_true')
-    parser.add_argument('--disable-hybrid', action='store_true')
+    parser.add_argument('--disable-hybrid', action='store_true', default=True)
+    parser.add_argument('--enable-hybrid', action='store_false', dest='disable_hybrid')
+    parser.add_argument('--all-skills', action='store_true')
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
     subprocess.run(['python3', str(repo / 'scripts/validate-skills.py')], check=True)
-    install(repo, args.home, args.client, args.key, args.base_url, args.with_rea, args.disable_hybrid, args.dry_run)
+    install(repo, args.home, args.client, args.key, args.base_url, args.with_rea, args.disable_hybrid, args.dry_run,
+            args.all_skills)
 
 
 if __name__ == '__main__':

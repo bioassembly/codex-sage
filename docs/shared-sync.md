@@ -51,16 +51,16 @@ version and release checksums are pinned separately.
 ## Install and restore
 
 ```bash
-# Codex
-bash scripts/activate.sh --disable-mcp hybrid-sage
+# Codex (Hybrid disabled by default via activate.sh)
+bash scripts/activate.sh
 python3 scripts/install_rtk.py
 
-# Antigravity repository
-bash install.sh --disable-hybrid
+# Antigravity repository (Hybrid disabled by default; pass --enable-hybrid to opt in)
+bash install.sh
 bash scripts/install-rtk.sh
 
-# OpenCode repository (2.x configuration)
-bash scripts/activate.sh --disable-hybrid
+# OpenCode repository (2.x configuration; Hybrid disabled by default, --enable-hybrid to opt in)
+bash scripts/activate.sh
 bash scripts/install-rtk.sh
 ```
 
@@ -70,8 +70,8 @@ choices, unrelated plugins, local skill overrides, and personal notes are retain
 Only recorded files are retired; updates do not delete entire personal skill
 trees, prune old backups, auto-install REA, or run Hybrid's installer.
 
-`--disable-hybrid` also retires known auto-discovered Hybrid plugin entrypoints
-through the journal. Otherwise an old filesystem plugin could remain active even
+By default (`--disable-hybrid`), installers also retire known auto-discovered Hybrid plugin
+entrypoints through the journal (pass `--enable-hybrid` or `--with-hybrid` to keep Hybrid enabled). Otherwise an old filesystem plugin could remain active even
 after disabling its MCP entry. No model processes are stopped.
 
 For isolated activation checks, pass `--home /temporary/user-root` (or set

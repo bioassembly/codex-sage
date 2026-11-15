@@ -108,11 +108,16 @@ def install(binary_data: bytes, codex_home: Path, bin_dir: Path, version: str) -
                  codex_home / 'RTK.md': harness.file_state((stage_home / 'RTK.md').read_text()),
                  codex_home / 'AGENTS.md': harness.file_state((stage_home / 'AGENTS.md').read_text().replace(
                      '@' + str(stage_home / 'RTK.md'), '@' + str(codex_home / 'RTK.md')))}
-    # Keep the existing SAGE diagnostics consistent with this authorized AGENTS update.
+    # Keep the existing SAGE diagnostics consistent with this authorized AGENTS/hooks update.
     if latest.exists():
         recorded = json.loads(latest.read_text())
-        if str(codex_home / 'AGENTS.md') in recorded:
-            recorded[str(codex_home / 'AGENTS.md')] = harness.fingerprint(plans[codex_home / 'AGENTS.md'])
+        updated = False
+        for name in ('AGENTS.md', 'hooks.json'):
+            target_path = codex_home / name
+            if str(target_path) in recorded and target_path in plans:
+                recorded[str(target_path)] = harness.fingerprint(plans[target_path])
+                updated = True
+        if updated:
             plans[latest] = harness.file_state(json.dumps(recorded, indent=2) + '\n')
     plans[marker] = harness.file_state(json.dumps({
         'version': version, 'edition': 'oss', 'binary': str(binary),

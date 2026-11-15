@@ -39,6 +39,12 @@ def merge(template, current, previous, client, disable_hybrid=False):
                     server[field] = defaults(incoming.get(field, {}), live[field])
             servers[name] = server
         # A custom registration sharing a template name is not adopted.
+    for name, old in previous.get(key, {}).items():
+        if name == 'hybrid-sage' or name in template.get(key, {}):
+            continue
+        live = servers.get(name)
+        if isinstance(live, dict) and isinstance(old, dict) and all(live.get(k) == old.get(k) for k in ('type', 'command', 'args', 'url')):
+            servers.pop(name, None)
     if disable_hybrid and isinstance(servers.get('hybrid-sage'), dict):
         servers['hybrid-sage']['enabled' if client == 'opencode' else 'disabled'] = client != 'opencode'
     result[key] = servers

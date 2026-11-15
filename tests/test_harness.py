@@ -48,7 +48,13 @@ class InstallationTests(unittest.TestCase):
             self.assertEqual(config[key], value)
         self.assertIn('# Keep this comment', self.config.read_text())
         self.assertEqual(auth.read_text(), '"test auth sentinel"')
-        self.assertTrue((self.args.skills_dir / "sage-genomics" / "SKILL.md").is_file())
+        self.assertTrue((self.args.skills_dir / "sage-design" / "SKILL.md").is_file())
+        self.assertFalse((self.args.skills_dir / "sage-genomics").exists())
+        self.assertTrue((self.args.codex_home / "skills-catalog/sage-genomics/SKILL.md").is_file())
+        self.assertTrue((self.args.codex_home / "skills-catalog/routing.json").is_file())
+        self.assertTrue((self.args.codex_home / "sage/route_skills.py").is_file())
+        hooks = json.loads((self.args.codex_home / "hooks.json").read_text())
+        self.assertIn("route_skills.py --client codex", json.dumps(hooks["hooks"]["SessionStart"]))
         self.assertNotIn("mcp_servers", config)
         self.assertNotIn("approval_policy", config)
         self.assertEqual(config['web_search'], 'live')
@@ -57,7 +63,8 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(agents.read_text(), "Personal instructions.\n")
         self.assertFalse((self.args.codex_home / "sage.config.toml").exists())
         self.assertEqual(self.config.read_bytes(), self.original)
-        self.assertFalse((self.args.skills_dir / "sage-genomics").is_symlink())
+        self.assertFalse((self.args.skills_dir / "sage-design").is_symlink())
+        self.assertFalse((self.args.codex_home / "hooks.json").exists())
         self.assertEqual((unrelated / "SKILL.md").read_text(), "private skill")
 
     def test_reinstallation_is_idempotent_and_restorable_in_order(self):
@@ -81,7 +88,7 @@ class InstallationTests(unittest.TestCase):
             skill.mkdir(parents=True)
             (skill / 'SKILL.md').write_text('fixture')
         self.args.with_hybrid = hybrid
-        self.args.mcp = ["deepwiki", "context7", "context7", "openai-docs"]
+        self.args.mcp = ["deepwiki", "context7", "context7", "serena"]
         harness.install(self.args)
         config = tomllib.loads(self.config.read_text())
         self.assertEqual(len(config["mcp_servers"]), 4)
@@ -105,7 +112,7 @@ class InstallationTests(unittest.TestCase):
         self.assertFalse((self.args.codex_home / "sage").exists())
 
     def test_real_directory_collision_is_preserved(self):
-        collision = self.args.skills_dir / "sage-genomics"
+        collision = self.args.skills_dir / "sage-design"
         collision.mkdir(parents=True)
         (collision / "SKILL.md").write_text("User authored")
         with self.assertRaisesRegex(ValueError, "directory"):
@@ -344,14 +351,52 @@ enabled = false
         self.assertEqual(server['url'], 'https://example.com/new-docs')
         self.assertFalse(server['enabled'])
 
-    def test_memory_path_is_private_and_resolved_for_custom_home(self):
+    def test_hooks_merge_preserves_existing_hooks_and_custom_home_quoting(self):
         self.args.codex_home = self.root / 'codex "quoted" home'
-        self.args.mcp = ['memory']
+        hooks_path = self.args.codex_home / 'hooks.json'
+        hooks_path.parent.mkdir(parents=True)
+        existing = {
+            'hooks': {
+                'PreToolUse': [{'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': 'rtk hook codex'}]}],
+                'SessionStart': [{'hooks': [{'type': 'command', 'command': 'custom-session-hook'}]}],
+            }
+        }
+        hooks_path.write_text(json.dumps(existing))
+        self.config = self.args.codex_home / 'config.toml'
+        self.config.write_text('model = "chosen"\n')
+        backup = harness.install(self.args)
+        merged = json.loads(hooks_path.read_text())
+        self.assertEqual(merged['hooks']['PreToolUse'], existing['hooks']['PreToolUse'])
+        self.assertEqual(len(merged['hooks']['SessionStart']), 2)
+        self.assertEqual(merged['hooks']['SessionStart'][0], existing['hooks']['SessionStart'][0])
+        self.assertIn("codex \"quoted\" home", merged['hooks']['SessionStart'][1]['hooks'][0]['command'])
+        self.args.all_skills = True
+        full_backup = harness.install(self.args)
+        cleaned = json.loads(hooks_path.read_text())
+        self.assertEqual(cleaned['hooks']['SessionStart'], existing['hooks']['SessionStart'])
+        self.assertTrue((self.args.skills_dir / 'sage-genomics/SKILL.md').is_file())
+        harness.restore(full_backup)
+        harness.restore(backup)
+        self.assertEqual(json.loads(hooks_path.read_text()), existing)
+
+    def test_retired_managed_mcp_disabled_without_clobbering_user_custom(self):
+        self.config.write_text(
+            '[mcp_servers.memory]\ncommand = "npx"\nargs = ["-y", "@modelcontextprotocol/server-memory"]\n'
+            '[mcp_servers.playwright]\ncommand = "my-custom-playwright"\nargs = ["--headless"]\n'
+        )
+        managed_dir = self.args.codex_home / 'sage'
+        managed_dir.mkdir(parents=True)
+        (managed_dir / 'managed-config.json').write_text(json.dumps({
+            'mcp_servers': {
+                'memory': {'command': 'npx', 'args': ['-y', '@modelcontextprotocol/server-memory']},
+                'playwright': {'command': 'npx', 'args': ['@playwright/mcp@0.0.70']},
+            }
+        }))
         harness.install(self.args)
-        config = tomllib.loads((self.args.codex_home / 'config.toml').read_text())
-        path = config['mcp_servers']['memory']['env']['MEMORY_FILE_PATH']
-        self.assertEqual(path, str(self.args.codex_home / 'sage/memory.json'))
-        self.assertNotIn('__CODEX_SAGE', path)
+        result = tomllib.loads(self.config.read_text())
+        self.assertFalse(result['mcp_servers']['memory']['enabled'])
+        self.assertNotIn('enabled', result['mcp_servers']['playwright'])
+        self.assertEqual(result['mcp_servers']['playwright']['command'], 'my-custom-playwright')
 
     def test_disabling_hybrid_retires_only_its_unchanged_skill_links(self):
         hybrid = self.root / 'hybrid'

@@ -17,17 +17,13 @@ bash scripts/activate.sh
 codex
 ```
 
-For documentation and semantic code navigation, with Hybrid disabled:
+For documentation and semantic code navigation (Hybrid disabled by default):
 
 ```bash
-bash scripts/activate.sh --mcp context7 --mcp deepwiki --mcp openai-docs --mcp serena --disable-mcp hybrid-sage
+bash scripts/activate.sh --mcp context7 --mcp deepwiki --mcp serena
 ```
 
-The installer links skills into `~/.agents/skills`, installs agent files under
-`$CODEX_HOME/agents`, replaces only its marked global guidance, and merges selected
-settings into `$CODEX_HOME/config.toml` using Codex's native TOML writer.
-`$CODEX_HOME` defaults to `~/.codex`. Keep this checkout in place: skill links point
-to it. Launch plain `codex`; no profile or wrapper is required.
+The installer links 9 always-loaded core skills into `~/.agents/skills`, stages the remaining 24 skills in `$CODEX_HOME/skills-catalog/` with a reversible `SessionStart` auto-skill router hook (`--all-skills` installs all 33 directly), installs agent files under `$CODEX_HOME/agents`, replaces only its marked global guidance, and merges selected settings into `$CODEX_HOME/config.toml` using Codex's native TOML writer. `$CODEX_HOME` defaults to `~/.codex`. Keep this checkout in place: skill links point to it. Launch plain `codex`; no profile or wrapper is required.
 
 Existing explicit defaults and MCP on/off choices survive updates, including a
 disabled Hybrid server. Omitted MCP flags do not remove registered servers.
@@ -80,22 +76,12 @@ available. This is a loading choice, not an access-control boundary.
 | --- | --- | --- |
 | `--mcp context7` | Library documentation | Network |
 | `--mcp deepwiki` | Public repository research | Network |
-| `--mcp openai-docs` | Official OpenAI documentation | Network |
 | `--mcp serena` | Symbol navigation and semantic edits | uvx; pinned serena-agent 2.1.0 |
-| `--mcp playwright` | Browser interaction when the client lacks it | Node/npx; pinned 0.0.85; browser installation |
-| `--mcp memory` | Optional independent knowledge graph | Node/npx; pinned 2.1.1 |
 
 Serena starts without indexing a home directory. Activate the actual task
 repository with its `activate_project` tool before symbol operations.
-The browser template uses an isolated headless session; install its browser with
-the server's supported browser-install workflow if needed. It does not inherit
-the sibling harness's blanket browser sandbox bypass.
-Memory uses `$CODEX_HOME/sage/memory.json`, not the sibling OpenCode store. Prefix
-facts with project scope and verify retrieved facts before relying on them.
 
-Native reasoning/web tools replace sequential-thinking and fetch in Codex.
-Existing project browser tests remain useful alongside an optional browser MCP.
-REA remains an on-demand reverse-engineering option through
+Native reasoning, web search/browsing, and project files replace `sequential-thinking`, `fetch`, `openai-docs`, `playwright`, and `memory` MCP servers to cut initial tool-schema overhead. REA remains an on-demand reverse-engineering option through
 `sage-binary-inspection`; a standing large server catalog is unnecessary.
 
 To register an optional Hybrid checkout, use `--with-hybrid ../hybrid-sage`.

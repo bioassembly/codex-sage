@@ -45,6 +45,34 @@ class ClientConfigTests(unittest.TestCase):
         self.assertNotIn('plugin', result)
         self.assertEqual(result['plugins'], [{'package': 'personal', 'options': {'flag': True}}])
 
+    def test_retired_template_mcps_are_pruned_while_custom_mcps_and_compaction_survive(self):
+        previous = {
+            'mcp': {
+                'context7': {'type': 'remote', 'url': 'https://mcp.context7.com/mcp'},
+                'memory': {'type': 'local', 'command': ['npx', '-y', '@modelcontextprotocol/server-memory']},
+                'playwright': {'type': 'local', 'command': ['npx', '@playwright/mcp@0.0.70']},
+            }
+        }
+        template = {
+            'mcp': {'context7': {'type': 'remote', 'url': 'https://mcp.context7.com/mcp'}},
+            'compaction': {'auto': True, 'keep': {'tokens': 15000}, 'buffer': 20000},
+        }
+        current = {
+            'mcp': {
+                'context7': {'type': 'remote', 'url': 'https://mcp.context7.com/mcp', 'enabled': True},
+                'memory': {'type': 'local', 'command': ['npx', '-y', '@modelcontextprotocol/server-memory'], 'enabled': True},
+                'playwright': {'type': 'local', 'command': ['my-custom-playwright'], 'enabled': True},
+                'private-lab': {'type': 'local', 'command': ['private-mcp']},
+            },
+            'compaction': {'auto': True, 'buffer': 32000},
+        }
+        result = module.merge(template, current, previous, 'opencode', True)
+        self.assertIn('context7', result['mcp'])
+        self.assertNotIn('memory', result['mcp'])
+        self.assertIn('playwright', result['mcp'])
+        self.assertIn('private-lab', result['mcp'])
+        self.assertEqual(result['compaction'], {'auto': True, 'keep': {'tokens': 15000}, 'buffer': 32000})
+
 
 if __name__ == '__main__':
     unittest.main()

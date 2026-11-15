@@ -94,8 +94,6 @@
     }
   ],
   "mcp_packages": {
-    "serena-agent": "2.1.0",
-    "@playwright/mcp": "0.0.85",
-    "@modelcontextprotocol/server-memory": "2.1.1"
+    "serena-agent": "2.1.0"
   }
 }

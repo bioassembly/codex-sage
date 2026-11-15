@@ -22,6 +22,7 @@ import uuid
 REPO = Path(__file__).resolve().parents[1]
 START = "<!-- codex-sage:start -->"
 END = "<!-- codex-sage:end -->"
+RETIRED_MCP_SERVERS = ("memory", "openai-docs", "playwright")
 
 
 def read_toml(path: Path) -> dict:
@@ -199,8 +200,78 @@ def stage_config(current: str, settings: dict) -> str:
     return output
 
 
+def check_skill_routing() -> None:
+    routing_file = REPO / "config/skill-routing.json"
+    if not routing_file.is_file():
+        return
+    routing = json.loads(routing_file.read_text())
+    actual = {path.parent.name for path in (REPO / "skills").glob("*/SKILL.md")}
+    core = routing.get("core", [])
+    rules = routing.get("rules", [])
+    rule_names = [rule["skill"] for rule in rules]
+    if len(core) != len(set(core)) or len(rule_names) != len(set(rule_names)):
+        raise ValueError("Duplicate skill entries in config/skill-routing.json")
+    overlap = set(core) & set(rule_names)
+    if overlap:
+        raise ValueError(f"Skills listed in both core and rules: {sorted(overlap)}")
+    routed = set(core) | set(rule_names)
+    if routed != actual:
+        raise ValueError(
+            f"Skill routing mismatch (missing={sorted(actual - routed)}, unknown={sorted(routed - actual)})"
+        )
+    for rule in rules:
+        for pat in rule.get("patterns", []):
+            re.compile(pat)
+
+
+def is_router_hook(command: str) -> bool:
+    try:
+        parts = shlex.split(command)
+    except ValueError:
+        return False
+    return len(parts) >= 4 and parts[1].endswith("sage/route_skills.py") and parts[2:] == ["--client", "codex"]
+
+
+def merge_session_start_hook(hooks_path: Path, command: str | None) -> dict | None:
+    if hooks_path.exists():
+        data = json.loads(hooks_path.read_text())
+        if not isinstance(data, dict):
+            raise ValueError(f"Invalid hooks.json object: {hooks_path}")
+    else:
+        if command is None:
+            return None
+        data = {}
+    hooks_section = copy.deepcopy(data.get("hooks", {}))
+    if not isinstance(hooks_section, dict):
+        raise ValueError(f"Invalid hooks section in {hooks_path}")
+    existing_groups = hooks_section.get("SessionStart", [])
+    if not isinstance(existing_groups, list):
+        raise ValueError(f"Invalid SessionStart hooks list in {hooks_path}")
+    kept_groups = []
+    for group in existing_groups:
+        if not isinstance(group, dict):
+            kept_groups.append(group)
+            continue
+        inner = [
+            item
+            for item in group.get("hooks", [])
+            if not (isinstance(item, dict) and is_router_hook(str(item.get("command", ""))))
+        ]
+        if inner:
+            kept_groups.append({**group, "hooks": inner})
+    if command is not None:
+        kept_groups.append({"hooks": [{"type": "command", "command": command}]})
+    if kept_groups:
+        hooks_section["SessionStart"] = kept_groups
+    else:
+        hooks_section.pop("SessionStart", None)
+    data = {**data, "hooks": hooks_section}
+    return file_state(json.dumps(data, indent=2) + "\n")
+
+
 def check() -> None:
     check_vendored()
+    check_skill_routing()
     for path in sorted(REPO.rglob("*.toml")):
         read_toml(path)
     sources = json.loads((REPO / 'sources.lock.json').read_text())
@@ -241,6 +312,7 @@ def install(args: argparse.Namespace) -> Path | None:
     live_config = read_toml(config) if config.exists() else {}
     managed_path = codex_home / "sage/managed-config.json"
     settings = json.loads(managed_path.read_text()) if managed_path.exists() else {}
+    previous_managed = copy.deepcopy(settings.get("mcp_servers", {}))
     selected = set(args.mcp)
     templates = mcp_templates()
     # Refresh previously selected templates on update, while honoring live toggles.
@@ -262,6 +334,19 @@ def install(args: argparse.Namespace) -> Path | None:
         settings = merge_settings(settings, {'mcp_servers': {'hybrid-sage': {
             'command': sys.executable, 'args': [str(server)]}}})
     settings = respect_user_choices(settings, live_config)
+    for name in RETIRED_MCP_SERVERS:
+        if name not in previous_managed:
+            continue
+        live = live_config.get('mcp_servers', {}).get(name)
+        if not isinstance(live, dict):
+            settings.get('mcp_servers', {}).pop(name, None)
+            continue
+        prev_body = {k: v for k, v in previous_managed[name].items() if k != 'enabled'}
+        live_body = {k: v for k, v in live.items() if k != 'enabled'}
+        if live_body == prev_body:
+            settings.setdefault('mcp_servers', {}).setdefault(name, {})['enabled'] = False
+        else:
+            settings.get('mcp_servers', {}).pop(name, None)
     for name in getattr(args, 'disable_mcp', []):
         server_id = next(iter(templates[name]['mcp_servers'])) if name in templates else name
         if server_id in settings.get('mcp_servers', {}) or server_id in live_config.get('mcp_servers', {}):
@@ -273,9 +358,31 @@ def install(args: argparse.Namespace) -> Path | None:
         codex_home / "sage/managed-config.json": file_state(json.dumps(settings, indent=2) + "\n"),
         global_agents: file_state(merge_instructions(current, (REPO / "config/AGENTS.md").read_text())),
     }
+    all_skills = getattr(args, "all_skills", False)
+    routing_file = REPO / "config/skill-routing.json"
+    routing = json.loads(routing_file.read_text()) if (routing_file.is_file() and not all_skills) else None
+    core_names = set(routing.get("core", [])) if routing else set()
+    catalog_names = {r["skill"] for r in routing.get("rules", []) if "skill" in r} if routing else set()
     for skill in sorted((REPO / "skills").iterdir()):
         if (skill / "SKILL.md").is_file():
-            plans[args.skills_dir.resolve() / skill.name] = {"kind": "symlink", "target": str(skill)}
+            if routing is None or skill.name in core_names or skill.name not in catalog_names:
+                plans[args.skills_dir.resolve() / skill.name] = {"kind": "symlink", "target": str(skill)}
+            else:
+                plans[codex_home / "skills-catalog" / skill.name] = {"kind": "symlink", "target": str(skill)}
+    if routing is not None and (REPO / "scripts/route_skills.py").is_file():
+        plans[codex_home / "skills-catalog/routing.json"] = file_state(json.dumps(routing, indent=2) + "\n", 0o644)
+        router_dest = codex_home / "sage/route_skills.py"
+        plans[router_dest] = file_state((REPO / "scripts/route_skills.py").read_text(), 0o755)
+        hook_state = merge_session_start_hook(
+            codex_home / "hooks.json",
+            shlex.join(["python3", str(router_dest), "--client", "codex"]),
+        )
+        if hook_state is not None:
+            plans[codex_home / "hooks.json"] = hook_state
+    else:
+        hook_state = merge_session_start_hook(codex_home / "hooks.json", None)
+        if hook_state is not None:
+            plans[codex_home / "hooks.json"] = hook_state
     hybrid_state = settings.get('mcp_servers', {}).get('hybrid-sage',
                         live_config.get('mcp_servers', {}).get('hybrid-sage'))
     hybrid_enabled = hybrid_state is not None and hybrid_state.get('enabled', True)
@@ -359,15 +466,22 @@ def doctor(args: argparse.Namespace) -> None:
     drift = [p for p, digest in latest.items() if fingerprint(snapshot(Path(p))) != digest]
     if drift:
         raise ValueError("Installed entries changed or missing: " + ", ".join(drift))
-    for path in args.skills_dir.resolve().glob("sage-*"):
-        if path.is_symlink() and not path.exists():
-            raise ValueError(f"Broken skill link: {path}")
+    for directory in (args.skills_dir.resolve(), home / "skills-catalog"):
+        if not directory.exists():
+            continue
+        for path in directory.iterdir():
+            if path.is_symlink() and not path.exists():
+                raise ValueError(f"Broken skill link: {path}")
+    active_skills = sum(1 for p in args.skills_dir.resolve().iterdir() if (p / "SKILL.md").is_file()) if args.skills_dir.exists() else 0
+    catalog_dir = home / "skills-catalog"
+    catalog_skills = sum(1 for p in catalog_dir.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()) if catalog_dir.exists() else 0
     if (home / "AGENTS.override.md").exists():
         print("Notice: AGENTS.override.md takes precedence over the installed global AGENTS.md.")
     servers = config.get('mcp_servers', {})
     enabled = [name for name in managed.get('mcp_servers', {}) if servers.get(name, {}).get('enabled', True)]
     disabled = [name for name in servers if not servers[name].get('enabled', True)]
-    print(f"Installation intact. Enabled SAGE MCP servers: {', '.join(enabled) or 'none'}")
+    print(f"Installation intact. Active skills: {active_skills}; catalog skills: {catalog_skills}")
+    print(f"Enabled SAGE MCP servers: {', '.join(enabled) or 'none'}")
     print(f"Disabled MCP servers: {', '.join(disabled) or 'none'}")
     if args.native:
         binary = shutil.which("codex")
@@ -394,6 +508,7 @@ def main() -> int:
             command.add_argument("--disable-mcp", action="append", choices=sorted(mcp_templates()) + ['hybrid-sage'], default=[],
                                  help="Keep a registered server disabled; harmless when absent")
             command.add_argument("--with-hybrid", type=Path, metavar="REPO", help="Register a local hybrid-sage checkout")
+            command.add_argument("--all-skills", action="store_true", help="Install all catalog skills directly instead of lazy routing")
             command.add_argument("--dry-run", action="store_true")
         else:
             command.add_argument("--native", action="store_true", help="Also ask ordinary Codex to validate its configuration")

@@ -120,6 +120,48 @@ class ClientActivationTests(unittest.TestCase):
             installer.harness.restore(journal)
             self.assertEqual(path.read_text(), 'managed hybrid fixture')
 
+    def test_tiered_skills_install_router_and_tidy_retired_dirs_on_upgrade(self):
+        for client in ('antigravity', 'opencode'):
+            with self.subTest(client=client):
+                repo, home, target, _ = self.prepare(client)
+                source = repo / ('reference' if client == 'opencode' else 'config')
+                skills_root = source / 'skills' if client == 'opencode' else repo / 'skills'
+                (skills_root / 'bio').mkdir()
+                (skills_root / 'bio/SKILL.md').write_text('---\nname: bio\ndescription: bio workflow\n---\n')
+                routing = {
+                    'version': 1,
+                    'core': ['example'],
+                    'rules': [{'skill': 'bio', 'category': 'bio', 'summary': 'Bio', 'patterns': ['bio']}],
+                }
+                (source / 'skill-routing.json').write_text(json.dumps(routing))
+                if client == 'opencode':
+                    (repo / 'plugins').mkdir(exist_ok=True)
+                    (repo / 'plugins/sage-skill-router.ts').write_text('// router')
+                else:
+                    rdir = repo / 'plugins/sage-skill-router'
+                    rdir.mkdir(parents=True)
+                    (rdir / 'plugin.json').write_text('{}')
+                    (rdir / 'route_skills.py').write_text('#!/usr/bin/env python3\n')
+                # Simulate an old copied non-core skill directory tracked by previous install.
+                old_bio_md = target / 'skills/bio/SKILL.md'
+                old_bio_md.parent.mkdir(parents=True, exist_ok=True)
+                old_bio_md.write_text('old bio')
+                (target / 'sage').mkdir(parents=True, exist_ok=True)
+                (target / 'sage/latest.json').write_text(
+                    json.dumps({str(old_bio_md): installer.harness.fingerprint(installer.harness.snapshot(old_bio_md))})
+                )
+
+                journal = installer.install(repo, home, client)
+                self.assertTrue((target / 'skills/example/SKILL.md').is_file())
+                self.assertFalse((target / 'skills/bio').exists())
+                self.assertTrue((target / 'skills-catalog/bio/SKILL.md').is_file())
+                self.assertTrue((target / 'skills-catalog/routing.json').is_file())
+                expected_plugin = target / ('plugins/sage-skill-router.ts' if client == 'opencode' else 'plugins/sage-skill-router/plugin.json')
+                self.assertTrue(expected_plugin.is_file())
+
+                installer.harness.restore(journal)
+                self.assertEqual(old_bio_md.read_text(), 'old bio')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -53,8 +53,4 @@ and persona hooks are not copied wholesale. New supporting prose is locally
 authored. Ponytail and grilling attribution/license is preserved in
 [third-party notices](THIRD_PARTY_NOTICES.md).
 
-MCP templates preserve documentation retrieval and add pinned optional Serena,
-Playwright, and independent memory configurations. Native reasoning and web
-retrieval cover the sibling sequential-thinking/fetch use cases. The REA skill
-covers on-demand binary inspection. This mapping preserves useful workflows
-without requiring every sibling server to be active in every Codex session.
+MCP templates preserve documentation retrieval (`context7`, `deepwiki`) and pinned optional Serena (`serena-agent==2.1.0`) semantic navigation. Native reasoning, web retrieval, and local notes cover the sibling `sequential-thinking`, `fetch`, `openai-docs`, `playwright`, and `memory` server roles without standing tool-schema overhead. The REA skill covers on-demand binary inspection. Tiered core/catalog routing loads 9 core skills upfront and discovers the remaining 24 domain skills via the `SessionStart` hook (`--all-skills` installs all 33 directly).

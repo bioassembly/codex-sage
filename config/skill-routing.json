@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "core": [
+    "ponytail",
+    "sage-checkpoint",
+    "sage-debug",
+    "sage-design",
+    "sage-git-commit",
+    "sage-repo-maintenance",
+    "sage-review",
+    "sage-test-design",
+    "sage-token-efficiency"
+  ],
+  "rules": [
+    {
+      "skill": "sage-genomics",
+      "category": "bioinformatics",
+      "summary": "Nextflow/nf-core, BAM/CRAM/VCF/FASTQ and QC genomics workflows",
+      "files": ["*.nf", "nextflow.config", "nf-test.config", "*.bam", "*.cram", "*.vcf", "*.vcf.gz", "*.fastq", "*.fastq.gz", "*.fq", "*.fq.gz"],
+      "deps": ["nextflow", "pysam", "cyvcf2"],
+      "patterns": ["\\bnextflow\\b", "\\bnf-core\\b", "\\bpysam\\b", "\\b(bam|cram|vcf|fastq|pileup|slurm)\\b", "\\bpromethion\\b"],
+      "companions": ["sage-fair-data"]
+    },
+    {
+      "skill": "sage-sequence-analysis",
+      "category": "bioinformatics",
+      "summary": "FASTA/GenBank/PDB parsing, BLAST, motifs and phylogenetics",
+      "files": ["*.fasta", "*.fa", "*.fna", "*.faa", "*.gb", "*.gbk", "*.pdb"],
+      "deps": ["biopython"],
+      "patterns": ["\\bbiopython\\b", "\\b(fasta|genbank|pdb|blast|phylogenet|motif)\\b"]
+    },
+    {
+      "skill": "sage-scientific-report",
+      "category": "science",
+      "summary": "Statistical figures, Quarto/scientific report QC and bias checks",
+      "files": ["*.qmd", "*.Rmd", "_quarto.yml"],
+      "deps": ["matplotlib", "seaborn", "plotly", "scipy", "statsmodels"],
+      "patterns": ["\\bquarto\\b", "\\b\\.qmd\\b", "\\b(volcano|heatmap|boxplot|violin|p[- ]?value)\\b", "\\bscientific report\\b"],
+      "companions": ["sage-fair-data"]
+    },
+    {
+      "skill": "sage-fair-data",
+      "category": "science",
+      "summary": "FAIR data/metadata packaging and scientific reproducibility",
+      "files": ["codemeta.json", "ro-crate-metadata.json", "datapackage.json"],
+      "patterns": ["\\bfair data\\b", "\\bro-crate\\b", "\\bmetadata dictionary\\b"]
+    },
+    {
+      "skill": "sage-results-package",
+      "category": "science",
+      "summary": "Package pipeline outputs into clean client deliverables",
+      "patterns": ["\\bresults/? folder\\b", "\\bclient-facing\\b", "\\bdeliverable\\b"]
+    },
+    {
+      "skill": "sage-explain",
+      "category": "science",
+      "summary": "First-principles explanations of algorithms and discrepancies",
+      "patterns": ["\\bfirst principles\\b", "\\bexplain why\\b", "\\bdiscrepancy\\b"]
+    },
+    {
+      "skill": "vercel-react-best-practices",
+      "category": "web",
+      "summary": "React and Next.js performance, server/client boundaries and bundling",
+      "files": ["next.config.*"],
+      "deps": ["react", "next"],
+      "patterns": ["\\breact\\b", "\\bnext\\.?js\\b", "\\bhydration\\b", "\\bserver component\\b", "\\buseeffect\\b"]
+    },
+    {
+      "skill": "sage-webapp-testing",
+      "category": "web",
+      "summary": "Local browser UI verification and Playwright debugging",
+      "files": ["playwright.config.*", "cypress.config.*"],
+      "deps": ["playwright", "@playwright/test", "cypress"],
+      "patterns": ["\\bplaywright\\b", "\\bbrowser test\\b", "\\bweb ?app\\b", "\\be2e\\b", "\\bscreenshot\\b"]
+    },
+    {
+      "skill": "sage-web-scraping",
+      "category": "web",
+      "summary": "Structured extraction from web pages and APIs",
+      "deps": ["beautifulsoup4", "scrapy", "cheerio", "puppeteer"],
+      "patterns": ["\\bscrap(e|ing)\\b", "\\bcrawl(ing|er)?\\b"]
+    },
+    {
+      "skill": "sage-security-audit",
+      "category": "security",
+      "summary": "Web/API security audit for auth, injection, XSS, CSRF and SSRF",
+      "patterns": ["\\bsecurity (audit|review|scan)\\b", "\\bowasp\\b", "\\b(xss|csrf|ssrf|sql injection)\\b"]
+    },
+    {
+      "skill": "differential-review",
+      "category": "security",
+      "summary": "Security-focused diff, blast radius and git blame regression review",
+      "patterns": ["\\bdifferential review\\b", "\\bdiff review\\b", "\\bblast radius\\b", "\\bpr security\\b"]
+    },
+    {
+      "skill": "variant-analysis",
+      "category": "security",
+      "summary": "Find sibling bug variants across a codebase via patterns/CodeQL/Semgrep",
+      "files": ["*.ql", ".semgrep.yml", ".semgrep.yaml"],
+      "patterns": ["\\bvariant analysis\\b", "\\bother instances\\b", "\\bsame bug\\b", "\\bcodeql\\b", "\\bsemgrep\\b"]
+    },
+    {
+      "skill": "sage-domain-modeling",
+      "category": "architecture",
+      "summary": "Bounded contexts, invariants and domain modeling conventions",
+      "files": ["GLOSSARY.md"],
+      "dirs": ["docs/adr", "adr"],
+      "patterns": ["\\bglossary\\b", "\\bdomain model\\b", "\\badr\\b"]
+    },
+    {
+      "skill": "domain-modeling",
+      "category": "architecture",
+      "summary": "Glossary and architecture decision record maintenance",
+      "patterns": ["\\bglossary\\b", "\\bdomain-modeling\\b", "\\bubiquitous language\\b"]
+    },
+    {
+      "skill": "grill-with-docs",
+      "category": "architecture",
+      "summary": "Design interview maintaining glossary and significant ADRs",
+      "patterns": ["\\bgrill[- ]with[- ]docs\\b", "\\bgrill[- ]me\\b", "\\bdesign interview\\b", "\\bstress[- ]test.*plan\\b"],
+      "companions": ["grilling", "domain-modeling"]
+    },
+    {
+      "skill": "grilling",
+      "category": "architecture",
+      "summary": "Interactive design questioning to resolve tradeoffs",
+      "patterns": ["\\bgrill me\\b", "\\bgrilling\\b"]
+    },
+    {
+      "skill": "sage-spec",
+      "category": "planning",
+      "summary": "Requirements and functional specifications",
+      "files": ["PRD.md", "SPEC.md"],
+      "patterns": ["\\bwrite a spec\\b", "\\bprd\\b", "\\bfunctional spec\\b"]
+    },
+    {
+      "skill": "sage-tickets",
+      "category": "planning",
+      "summary": "Vertical-slice task and issue breakdown",
+      "patterns": ["\\bbreak into tickets\\b", "\\bvertical slice\\b", "\\bgithub issues\\b"]
+    },
+    {
+      "skill": "sage-git-worktrees",
+      "category": "git",
+      "summary": "Isolated git worktrees for parallel work",
+      "patterns": ["\\bworktree\\b", "\\bisolated branch\\b"]
+    },
+    {
+      "skill": "sage-mcp-builder",
+      "category": "tooling",
+      "summary": "MCP server design and protocol evaluation",
+      "deps": ["fastmcp", "@modelcontextprotocol/sdk"],
+      "patterns": ["\\bmcp server\\b", "\\bfastmcp\\b", "\\bmodel context protocol\\b"]
+    },
+    {
+      "skill": "sage-pdf-editing",
+      "category": "documents",
+      "summary": "In-place PDF editing and true anonymization/redaction",
+      "patterns": ["\\bpdf\\b", "\\bredact\\b", "\\banonymiz"]
+    },
+    {
+      "skill": "sage-binary-inspection",
+      "category": "tooling",
+      "summary": "Inspect binaries, bytecode, wheels or minified bundles cleanly",
+      "patterns": ["\\breverse[- ]engineer\\b", "\\bdecompil", "\\bdisassembl", "\\bbytecode\\b", "\\bminified bundle\\b"]
+    },
+    {
+      "skill": "sage-overnight",
+      "category": "research",
+      "summary": "Unattended deep exploration with verified findings logs",
+      "patterns": ["\\bovernight\\b", "\\bwhile i('m| am)? (away|asleep)\\b", "\\bautonomous exploration\\b"]
+    },
+    {
+      "skill": "sage-harness-eval",
+      "category": "meta",
+      "summary": "Evaluate harness and prompt changes with assertions",
+      "dirs": ["evals"],
+      "files": ["SKILL.md", "third_party/lock.json"],
+      "patterns": ["\\bevaluate skill\\b", "\\ba/b compare\\b", "\\bharness eval\\b"]
+    }
+  ]
+}

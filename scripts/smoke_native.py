@@ -59,11 +59,35 @@ def main():
             if result.returncode:
                 raise RuntimeError(result.stderr)
             json.loads(result.stdout)
+            for name in ('ponytail', 'sage-design', 'sage-token-efficiency', 'sage-review'):
+                assert name in result.stdout, f"Native core skill discovery failed: {name}"
+            assert "sage-reviewer" in result.stdout, "Native custom agent discovery failed"
+            assert not (args.skills_dir / "sage-genomics").exists(), "Catalog skill should be lazy-routed by default"
+            assert (args.codex_home / "skills-catalog/sage-genomics/SKILL.md").is_file(), "Catalog skill missing"
+            (root / "main.nf").write_text("nextflow.enable.dsl=2\n")
+            hook_proc = subprocess.run(
+                ["python3", str(args.codex_home / "sage/route_skills.py"), "--client", "codex"],
+                input=json.dumps({"cwd": str(root), "session_id": "smoke", "hook_event_name": "SessionStart"}),
+                capture_output=True, text=True, check=True, timeout=15,
+            )
+            assert "sage-genomics" in hook_proc.stdout, f"Skill router failed on .nf workspace: {hook_proc.stdout}"
+            print("Lazy core + catalog routing validated without activating all catalog skills.")
+        finally:
+            harness.restore(backup)
+
+        full_args = argparse.Namespace(**vars(args), all_skills=True)
+        backup = harness.install(full_args)
+        try:
+            harness.doctor(full_args)
+            env = {**os.environ, "CODEX_HOME": str(full_args.codex_home)}
+            result = subprocess.run([binary, "debug", "prompt-input"], cwd=root, env=env, capture_output=True, text=True, timeout=30)
+            if result.returncode:
+                raise RuntimeError(result.stderr)
+            json.loads(result.stdout)
             assert "sage-genomics" in result.stdout, "Native skill discovery failed"
             for name in ('ponytail', 'grilling', 'domain-modeling', 'sage-mcp-builder', 'sage-token-efficiency',
                          'variant-analysis', 'differential-review', 'vercel-react-best-practices'):
                 assert name in result.stdout, f"Native skill discovery failed: {name}"
-            assert "sage-reviewer" in result.stdout, "Native custom agent discovery failed"
             catalog = asyncio.run(skill_catalog(binary, env, root))
             assert catalog.get('grill-with-docs', {}).get('enabled'), 'Explicit grill-with-docs skill missing from native selector'
             assert 'grill-me' not in catalog, 'Retired grill-me skill remains installed'
