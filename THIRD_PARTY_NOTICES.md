@@ -1,6 +1,7 @@
 # Third-party notices
 
-`skills/ponytail`, `skills/grill-me`, and `skills/grilling` are original pinned
+`skills/ponytail`, `skills/grill-with-docs`, `skills/grilling`, and
+`skills/domain-modeling` are original pinned
 upstream packages from DietrichGebert/ponytail and mattpocock/skills. Their complete
 files and original invocation policies are preserved. Native loader mapping lives
 outside the packages. Reviewed revisions and original hashes are tracked in the
@@ -72,4 +73,4 @@ identifies the respective library licenses.
 One Anthropic MCP evaluation helper has an explicit correctness patch to process
 all tool requests in a response. The original source hash, patched hash, and
 patch file are recorded. Three Vercel compiled-guide aliases are also declared.
-Ponytail and both grilling packages have no content patches.
+Ponytail, grill-with-docs, grilling, and domain-modeling have no content patches.

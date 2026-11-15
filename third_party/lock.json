@@ -147,12 +147,12 @@
     {
       "repository": "mattpocock/skills",
       "revision": "5863806dd4e15c63174bee4e7515a4256792ecfa",
-      "path": "skills/productivity/grill-me",
-      "name": "grill-me",
+      "path": "skills/engineering/grill-with-docs",
+      "name": "grill-with-docs",
       "license": "MIT",
       "files": {
-        "SKILL.md": "3947ff9c4ad980d14fc07fccbf659d47c114e81d",
-        "agents/openai.yaml": "4d6fb0c746c5d21364dce5d0cf8c51eab9712e7b"
+        "SKILL.md": "62b9efb6f991d1b229adee7506962f13ced0c499",
+        "agents/openai.yaml": "5dbe2780a51be3e9b118bd7758a73e54a9384e11"
       }
     },
     {
@@ -164,6 +164,18 @@
       "files": {
         "SKILL.md": "d2f09a18e6a6c65c55f1271ba08dfeaf06f0bed3",
         "agents/openai.yaml": "ddbdb96139c0c1dfe6bca698f39d0465674b8a39"
+      }
+    },
+    {
+      "repository": "mattpocock/skills",
+      "path": "skills/engineering/domain-modeling",
+      "name": "domain-modeling",
+      "revision": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "files": {
+        "ADR-FORMAT.md": "d7e61f30a9fd8ca70d9ee68f019c2a9ebf2d13f7",
+        "GLOSSARY-FORMAT.md": "9c0b4c7a2e8507c23cbb5e0baa66d81699321cc6",
+        "SKILL.md": "a4438c6879c517d1a08e2b5fbca049b632688dfe",
+        "agents/openai.yaml": "7f1522d2f11506ee205275ab7c282aa52366ecf6"
       }
     }
   ],

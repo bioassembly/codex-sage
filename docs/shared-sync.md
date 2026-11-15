@@ -1,6 +1,8 @@
 # Shared upstream refresh and client integration
 
-The 2026-11-15 refresh uses original Ponytail, grill-me, and full grilling packages.
+The harness uses original Ponytail, grill-with-docs, and its full grilling and
+domain-modeling dependencies. Grill-with-docs replaces the plain grill-me wrapper
+and records resolved terminology and consequential design decisions as it interviews.
 Their instructions and invocation policies are unchanged. Native loader mapping
 lives in global guidance rather than replacing upstream workflow text.
 
@@ -13,7 +15,7 @@ independent upstream release and retain their own names and scope.
 | Capability | Codex | Antigravity / OpenCode |
 | --- | --- | --- |
 | Minimal complete implementation | Original ponytail | Same original package; duplicate OpenCode injector retired |
-| Design interview | Original grill-me + grilling | Same originals; native skill-loader bridge |
+| Design interview with documents | Original grill-with-docs + grilling + domain-modeling | Same originals; native skill-loader bridge |
 | Domain design/spec/tickets | sage-design, sage-domain-modeling, sage-spec, sage-tickets | Refreshed original domain-modeling, codebase-design, to-spec, to-tickets, setup dependency |
 | Debugging/testing/isolation | sage-debug, sage-test-design, sage-git-worktrees | Refreshed original Superpowers packages |
 | Scientific work | Scoped sage-* workflows | Refreshed K-Dense packages plus retained local scientific validation notes |
@@ -31,8 +33,9 @@ version and release checksums are pinned separately.
 
 ## Recorded compatibility fixes
 
-- The grill-me wrapper calls `Skill("grilling")`; clients without that exact tool
-  use their native skill loader or read the installed full dependency.
+- The grill-with-docs wrapper loads both `grilling` and `domain-modeling`; clients
+  without the upstream `Skill` tool use their native skill loader or read both
+  installed dependencies. Its original explicit-only invocation policy is retained.
 - Some Nextflow supporting documents refer to `references/...` from package root.
   The validator resolves these package-root paths without editing upstream text.
 - Three links in Vercel's compiled guide omit `rules/`. Declared file aliases make

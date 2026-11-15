@@ -1,6 +1,6 @@
 # Codex SAGE
 
-A reproducible Codex harness with 32 skills, three specialist agents,
+A reproducible Codex harness with 33 skills, three specialist agents,
 optional MCP integrations, and reversible installation. Work executes in Codex
 by default. Hybrid SAGE is optional and never enabled by the standard install.
 
@@ -41,7 +41,7 @@ installer-owned Hybrid skill links retire when Hybrid is disabled.
 
 | Workflow | Skills |
 | --- | --- |
-| Scope and decisions | `ponytail`, `grill-me`, `grilling`, `sage-design`, `sage-domain-modeling`, `sage-spec`, `sage-tickets` |
+| Scope and decisions | `ponytail`, `grill-with-docs`, `grilling`, `domain-modeling`, `sage-design`, `sage-domain-modeling`, `sage-spec`, `sage-tickets` |
 | Engineering | `sage-debug`, `sage-test-design`, `sage-review`, `sage-mcp-builder`, `sage-repo-maintenance` |
 | Git | `sage-git-worktrees`, `sage-git-commit` |
 | Scientific work | `sage-genomics`, `sage-sequence-analysis`, `sage-scientific-report`, `sage-results-package`, `sage-fair-data` |
@@ -49,11 +49,13 @@ installer-owned Hybrid skill links retire when Hybrid is disabled.
 | Continuity and evaluation | `sage-checkpoint`, `sage-overnight`, `sage-harness-eval`, `sage-token-efficiency` |
 | Upstream packages | `variant-analysis`, `differential-review`, `vercel-react-best-practices` |
 
-Invoke a skill with `$ponytail`, `$grill-me`, or another name, or let Codex match
+Invoke a skill with `$ponytail`, `$grill-with-docs`, or another name, or let Codex match
 its description. Skill bodies load when selected; the discovery catalog contains
 names, descriptions, and paths. Adding skills still has a metadata cost.
-Ponytail, grill-me, and the full grilling dependency are original pinned upstream
-packages. The host loader maps the upstream `Skill` call to native skill loading
+Ponytail, grill-with-docs, and its full grilling/domain-modeling dependencies are
+original pinned upstream packages. Grill-with-docs sharpens the design through an
+interview while recording resolved terms in a glossary and significant decisions
+in ADRs. The host loader maps upstream `Skill` calls to native skill loading
 outside those files. Original interview modes, stopping rules, and explicit-only
 invocation policy remain intact. See [workflow mapping](REGISTRY.md).
 

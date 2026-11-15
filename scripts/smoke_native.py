@@ -60,13 +60,14 @@ def main():
                 raise RuntimeError(result.stderr)
             json.loads(result.stdout)
             assert "sage-genomics" in result.stdout, "Native skill discovery failed"
-            for name in ('ponytail', 'grilling', 'sage-mcp-builder', 'sage-token-efficiency',
+            for name in ('ponytail', 'grilling', 'domain-modeling', 'sage-mcp-builder', 'sage-token-efficiency',
                          'variant-analysis', 'differential-review', 'vercel-react-best-practices'):
                 assert name in result.stdout, f"Native skill discovery failed: {name}"
             assert "sage-reviewer" in result.stdout, "Native custom agent discovery failed"
             catalog = asyncio.run(skill_catalog(binary, env, root))
-            assert catalog.get('grill-me', {}).get('enabled'), 'Explicit grill-me skill missing from native selector'
-            print('Native selector discovers original explicit-only grill-me and automatic grilling dependency.')
+            assert catalog.get('grill-with-docs', {}).get('enabled'), 'Explicit grill-with-docs skill missing from native selector'
+            assert 'grill-me' not in catalog, 'Retired grill-me skill remains installed'
+            print('Native selector discovers original explicit-only grill-with-docs and both full dependencies.')
             print("Ordinary Codex discovered the installed skills and custom agents without a profile.")
             result = subprocess.run([binary, "app-server", "--strict-config", "--print-startup-config"],
                                     env=env,

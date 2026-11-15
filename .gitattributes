@@ -3,8 +3,9 @@ skills/variant-analysis/** -text -whitespace
 skills/differential-review/** -text -whitespace
 skills/vercel-react-best-practices/** -text -whitespace
 skills/ponytail/** -text -whitespace
-skills/grill-me/** -text -whitespace
+skills/grill-with-docs/** -text -whitespace
 skills/grilling/** -text -whitespace
+skills/domain-modeling/** -text -whitespace
 third_party/licenses/** -text -whitespace
 runtime/rtk/** -text -whitespace
 # Unified patches require a space prefix on blank context lines.

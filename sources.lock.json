@@ -1,6 +1,6 @@
 {
   "reviewed": "2026-11-15",
-  "note": "Reviewed pinned sources. Original Ponytail/grill-me/grilling coexist with locally maintained SAGE workflows; per-client manifests record upstream files, explicit patches and compatibility aliases.",
+  "note": "Reviewed pinned sources. Original Ponytail/grill-with-docs/grilling/domain-modeling coexist with locally maintained SAGE workflows; per-client manifests record upstream files, explicit patches and compatibility aliases.",
   "sources": [
     {
       "repository": "bioassembly/antigravity-sage",
@@ -33,9 +33,10 @@
       "repository": "mattpocock/skills",
       "revision": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "paths": [
-        "skills/productivity/grill-me/SKILL.md",
+        "skills/engineering/grill-with-docs/SKILL.md",
         "skills/productivity/grilling/SKILL.md",
-        "LICENSE"
+        "LICENSE",
+        "skills/engineering/domain-modeling"
       ],
       "license": "MIT"
     },

@@ -9,6 +9,8 @@ This is a source/configuration audit, not a model-performance benchmark.
 
 At the user's request, the earlier shortened adaptations were replaced by the
 original Ponytail and grill-me packages and the complete grilling dependency.
+Grill-me was subsequently replaced with original grill-with-docs, which also
+loads the original domain-modeling package to maintain a glossary and ADRs.
 Original files, modes, interview stopping rules, and invocation metadata are
 verified against upstream hashes. Host-specific skill loading is mapped outside
 those files. No intelligence or performance improvement is inferred from either
@@ -57,7 +59,7 @@ See [OpenAI's guidance on concise skills and global instructions](https://develo
 | Finding | Codex adaptation / follow-up |
 | --- | --- |
 | Ponytail is an OpenCode plugin entry, not an installed Codex skill | Installed the original skill package and attribution. The duplicate unpinned OpenCode injector is retired in favor of that native skill. |
-| Upstream grill-me now wraps `grilling` under `skills/productivity/` | Installed the original wrapper and full grilling dependency; native loader mapping handles the upstream Skill call without rewriting either package. |
+| Upstream grill-with-docs combines `grilling` and `domain-modeling` | Replaced grill-me with the original explicit-only wrapper and both full dependencies; native loader mapping handles both Skill calls without rewriting the packages. |
 | Sibling token-efficiency favors Serena first and makes broad retrieval claims | Codex chooses rg or semantic navigation to fit the task, reads callers/control flow, and measures before claiming savings. |
 | Sibling small-model guidance includes sequential-thinking and fixed context budgets | These do not transfer directly to a frontier Codex configuration. Native reasoning/web tools cover ordinary reasoning/fetch; no extra server is enabled for those. |
 | Serena launch is unpinned in the sibling configurations | Added pinned `serena-agent==2.1.0`, validated `codex` context/CLI options, no automatic home-directory indexing. Its optional REPL interface remains an evaluation candidate. |

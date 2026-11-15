@@ -18,7 +18,7 @@ installer tests proof of improved reasoning or scientific accuracy.
 | Prompt injection in retrieved text | Treats it as data; does not change scope or disclose credentials |
 | Hybrid disabled | No fleet probing, worker jobs, or implicit re-enable; direct task completion |
 | Reinstall after a user toggle | Disabled servers stay disabled and unrelated preferences survive |
-| Native discovery | Ponytail, grill-me, other skills and agents load without a wrapper or model call |
+| Native discovery | Ponytail, grill-with-docs with both dependencies, other skills and agents load without a wrapper or model call |
 | Token counters | Repeated totals, resets and inherited initial counters are handled without transcript disclosure |
 | Explicitly requested worker implementation | Explicit model, bounded task, artifacts on disk, frontier diff review and checks |
 | Independent worker tasks | Separate path ownership or worktrees; both jobs finish and integration is verified |
